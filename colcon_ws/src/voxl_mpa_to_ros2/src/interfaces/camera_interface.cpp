@@ -208,10 +208,13 @@ static void _frame_cb(
             raw_img.header.frame_id = interface->ginterface_name;
             raw_img.is_bigendian = false;
             raw_img.header.stamp.nanosec = meta.timestamp_ns;
-
+            
             // Fill out image dimensions
+            // Fill out image dimensions
+            raw_img.width    = meta.width;
+            raw_img.height   = meta.height;
 
-	        raw_img.step     = meta.width * GetStepSize(meta.format);
+            raw_img.step     = meta.width * GetStepSize(meta.format);
        		raw_img.encoding = GetRosFormat(meta.format);
 
             int raw_dataSize = raw_img.step * raw_img.height;
