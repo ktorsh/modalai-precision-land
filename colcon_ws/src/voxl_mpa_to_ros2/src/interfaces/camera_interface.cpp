@@ -228,7 +228,28 @@ static void _frame_cb(
             break;
            }
         // Encoded image formats
-        default:
+        case IMAGE_FORMAT_H264:
+           {
+            auto h264_img = interface->GetCompressedImageMsg();
+
+            // Fill out the image msg header
+            h264_img.header.frame_id = interface->ginterface_name;
+            h264_img.header.stamp.nanosec = meta.timestamp_ns;
+
+            // Fill out image data
+            h264_img.format = GetRosFormat(meta.format);
+            int h264_dataSize = meta.size_bytes;
+
+            h264_img.data.resize(h264_dataSize);
+
+            memcpy(&(h264_img.data[0]), frame, h264_dataSize);
+
+            interface->m_rosCompressedPublisher_->publish(h264_img);
+
+            break;
+          }
+
+        case IMAGE_FORMAT_H265:
            {
             auto c_img = interface->GetCompressedImageMsg();
 
@@ -248,6 +269,15 @@ static void _frame_cb(
 
             break;
           }
+        
+        default:
+        {
+            // Warn if there is unrecognized formats
+            RCLCPP_WARN(rclcpp::get_logger(""), "Unrecognized image format");
+
+            break;
+
+        }
     }
 
 }
