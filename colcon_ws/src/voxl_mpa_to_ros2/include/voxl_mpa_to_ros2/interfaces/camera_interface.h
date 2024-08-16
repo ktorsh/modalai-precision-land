@@ -35,8 +35,9 @@
 #define CAMERA_MPA_INTERFACE
 
 #include <sensor_msgs/msg/image.hpp>
-#include <image_transport/image_transport.h>
-#include <image_transport/publisher.h>
+#include <sensor_msgs/msg/camera_info.hpp>
+#include <image_transport/image_transport.hpp>
+#include <image_transport/publisher.hpp>
 
 #include "voxl_mpa_to_ros2/interfaces/generic_interface.h"
 
@@ -56,14 +57,25 @@ public:
         return m_imageMsg;
     }
 
+    sensor_msgs::msg::CameraInfo& GetCameraInfo(){
+        return m_cameraInfo;
+    }
+
     image_transport::Publisher& GetPublisher(){
         return m_rosImagePublisher;
     }
 
+    rclcpp::Publisher<sensor_msgs::msg::CameraInfo>::SharedPtr& GetCameraInfoPublisher(){
+        return m_rosCameraInfoPublisher;
+    }
+
+
 private:
 
     sensor_msgs::msg::Image                     m_imageMsg;                   ///< Image message
+    sensor_msgs::msg::CameraInfo                m_cameraInfo;
     image_transport::Publisher             m_rosImagePublisher;          ///< Image publisher
+    rclcpp::Publisher<sensor_msgs::msg::CameraInfo>::SharedPtr          m_rosCameraInfoPublisher;
 
 };
 #endif
