@@ -32,6 +32,12 @@ Install mpa-to-ros2 by running (VOXL):
 
 Run the following commands(on voxl2):
 
+Update Packages:
+```apt-get update```
+
+Install yaml-cpp: 
+```apt-get install -y libyaml-cpp-dev```
+
 Source the ros2 foxy setup script:
 
 ```source /opt/ros/foxy/setup.bash```
@@ -57,6 +63,7 @@ voxl:/$ ros2 launch voxl_mpa_to_ros2 voxl_mpa_to_ros2.launch
 
 MPA to ROS app is now running
 
+Found new interface: tf_static
 Found new interface: stereo
 Found new interface: tof_conf
 Found new interface: tof_depth
