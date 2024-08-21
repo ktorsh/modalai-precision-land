@@ -32,12 +32,6 @@ Install mpa-to-ros2 by running (VOXL):
 
 Run the following commands(on voxl2):
 
-Update Packages:
-```apt-get update```
-
-Install yaml-cpp: 
-```apt-get install -y libyaml-cpp-dev```
-
 Source the ros2 foxy setup script:
 
 ```source /opt/ros/foxy/setup.bash```

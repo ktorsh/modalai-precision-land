@@ -92,7 +92,7 @@ typedef struct InterfaceListNode {
 
 } InterfaceListNode;
 
-static bool listContainsPipe(InterfaceListNode *head, const char *name){
+static bool listContainsPipe(InterfaceListNode *head, char *name){
 
     for(InterfaceListNode *cur = head->next; cur != NULL; cur = cur->next){
 
@@ -120,16 +120,17 @@ static int findPipes(InterfaceListNode *head, rclcpp::Node::SharedPtr nh){
 	char buf[64];
 
 	// Start extrinsics publishing
-	const char* name_ext = "tf_static";
-	if(!listContainsPipe(head, name_ext)){//This interface is already open
+	std::string name_ext = "tf_static";
+	strcpy(buf, name_ext.c_str());
+	if(!listContainsPipe(head, buf)){//This interface is already open
 		InterfaceListNode *newNode = (InterfaceListNode *)malloc(sizeof(InterfaceListNode));
-		strcpy(newNode->name, name_ext);
+		strcpy(newNode->name, buf);
 		newNode->next = NULL;
 		newNode->interface = new ExtrinsicsInterface(nh, newNode->name);
 		tail->next = newNode;
 		tail = newNode;
 		newNode->interface->AdvertiseTopics();
-		printf("Found new interface: %s\n", name_ext);
+		printf("Found new interface: %s\n", buf);
 	}
 
 
