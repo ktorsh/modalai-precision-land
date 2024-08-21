@@ -104,10 +104,10 @@ add_executable(${PROJECT_NAME}_node
 )
 ament_target_dependencies(${PROJECT_NAME}_node ${dependencies})
 target_link_libraries(${PROJECT_NAME}_node
-  ${YAML_CPP_LIBRARY}
+    ${YAML_CPP_LIBRARY}
 	/usr/lib64/libmodal_pipe.so
 	/usr/lib64/libmodal_json.so
-  jsoncpp_lib
+    jsoncpp_lib
 )
 
 install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})

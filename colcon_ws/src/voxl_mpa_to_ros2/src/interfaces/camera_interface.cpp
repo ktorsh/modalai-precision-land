@@ -74,7 +74,6 @@ void CameraInterface::AdvertiseTopics(){
     std::string pipeName = std::string(m_pipeName);
     std::string cameraInfoTopic = pipeName + "/camera_info";
     m_rosCameraInfoPublisher = m_rosNodeHandle->create_publisher<sensor_msgs::msg::CameraInfo>(cameraInfoTopic, 1);
-    // m_rosCameraInfoPublisher = m_rosNodeHandle.advertise<sensor_msgs::msg::CameraInfo>(cameraInfoTopic, 1);
 
     // Parsing yaml
     std::string cv_intrinsics_path = "/data/modalai/opencv_" + pipeName + "_intrinsics.yml";
@@ -113,7 +112,6 @@ void CameraInterface::StopAdvertising(){
 
     m_rosImagePublisher.shutdown();
 
-    // m_rosCameraInfoPublisher.shutdown();
     m_state = ST_CLEAN;
 
 }
