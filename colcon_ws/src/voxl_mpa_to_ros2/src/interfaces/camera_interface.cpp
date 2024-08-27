@@ -63,9 +63,11 @@ CameraInterface::CameraInterface(
         throw -1;
     }
 
+    this->setPublishingState(false);
 }
 
 void CameraInterface::AdvertiseTopics(){
+    
 
     image_transport::ImageTransport it(m_rosNodeHandle);
 
@@ -73,7 +75,10 @@ void CameraInterface::AdvertiseTopics(){
 
     std::string pipeName = std::string(m_pipeName);
     std::string cameraInfoTopic = pipeName + "/camera_info";
-    m_rosCameraInfoPublisher = m_rosNodeHandle->create_publisher<sensor_msgs::msg::CameraInfo>(cameraInfoTopic, 1);
+
+    if(m_rosCameraInfoPublisher == nullptr){
+        m_rosCameraInfoPublisher = m_rosNodeHandle->create_publisher<sensor_msgs::msg::CameraInfo>(cameraInfoTopic, 1);
+    }
 
     // Parsing yaml
     std::string cv_intrinsics_path = "/data/modalai/opencv_" + pipeName + "_intrinsics.yml";
@@ -103,13 +108,15 @@ void CameraInterface::AdvertiseTopics(){
                     camera_matrix_data[3], camera_matrix_data[4], camera_matrix_data[5], 0.0,
                     camera_matrix_data[6], camera_matrix_data[7], camera_matrix_data[8], 0.0};
     }
+    this->setPublishingState(true);
 
     m_state = ST_AD;
 
 }
 
 void CameraInterface::StopAdvertising(){
-
+    
+    this->setPublishingState(false);
     m_rosImagePublisher.shutdown();
 
     m_state = ST_CLEAN;
@@ -144,7 +151,9 @@ static void _frame_cb(
     camera_info.header.stamp = img.header.stamp;
     camera_info.header.frame_id = std::to_string(meta.frame_id);
 
-    camera_info_publisher->publish(camera_info);
+    if(interface->getPublishingState()){
+        camera_info_publisher->publish(camera_info);
+    }
 
 
     if(meta.format == IMAGE_FORMAT_NV21 || meta.format == IMAGE_FORMAT_NV12){

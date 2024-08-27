@@ -69,9 +69,18 @@ public:
         return m_rosCameraInfoPublisher;
     }
 
+    bool getPublishingState(){
+        return publishing;
+    }
+
+    void setPublishingState(bool state){
+        publishing = state; 
+    }
+
 
 private:
 
+    bool publishing = false;
     sensor_msgs::msg::Image                     m_imageMsg;                   ///< Image message
     sensor_msgs::msg::CameraInfo                m_cameraInfo;
     image_transport::Publisher             m_rosImagePublisher;          ///< Image publisher
