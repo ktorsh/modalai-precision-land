@@ -285,7 +285,7 @@ static void _helper_cb (int ch, point_cloud_metadata_t meta, void* data, void* c
 
     }
 
-    pcMsg.header.stamp = _clock_monotonic_to_ros_time(interface->getNodeHandle(), meta.timestamp_ns);
+    pcMsg.header.stamp = meta.timestamp_ns;
 
     switch (meta.format) {
 
