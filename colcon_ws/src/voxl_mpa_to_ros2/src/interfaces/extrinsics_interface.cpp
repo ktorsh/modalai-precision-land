@@ -38,7 +38,10 @@ ExtrinsicsInterface::ExtrinsicsInterface(
     const char *    name) :
     GenericInterface(nh, name)
 {
-    ReadandPublishConfig();
+    br_ = std::make_shared<tf2_ros::StaticTransformBroadcaster>(m_rosNodeHandle);
+    m_timer = nh->create_wall_timer(
+        std::chrono::seconds(1),
+        [this]() {this->ReadandPublishConfig(); });
 }
 
 void ExtrinsicsInterface::ReadandPublishConfig(){
@@ -52,7 +55,7 @@ void ExtrinsicsInterface::ReadandPublishConfig(){
     config_doc >> root;
 
     const Json::Value extrinsics = root["extrinsics"];
-    br_ = std::make_shared<tf2_ros::StaticTransformBroadcaster>(m_rosNodeHandle);
+    
     for (const auto& extrinsic : extrinsics) {
         geometry_msgs::msg::TransformStamped transform;
 

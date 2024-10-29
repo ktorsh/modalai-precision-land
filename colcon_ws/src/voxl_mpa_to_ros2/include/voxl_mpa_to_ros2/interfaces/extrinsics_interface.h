@@ -60,7 +60,7 @@ public:
 
 private:
 
-    rclcpp::Time m_timer;                                     ///< Ros2 timer
+    rclcpp::TimerBase::SharedPtr m_timer;                                     ///< Ros2 timer
     std::vector<geometry_msgs::msg::TransformStamped> transforms_;
     std::shared_ptr<tf2_ros::StaticTransformBroadcaster> br_;
 };
