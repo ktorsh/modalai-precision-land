@@ -144,7 +144,7 @@ static void _frame_cb(
     sensor_msgs::msg::CameraInfo& camera_info = interface->GetCameraInfo();
     rclcpp::Publisher<sensor_msgs::msg::CameraInfo>::SharedPtr camera_info_publisher = interface->GetCameraInfoPublisher();
 
-    img.header.stamp = meta.timestamp_ns;
+    img.header.stamp = _clock_monotonic_to_ros_time(interface->getNodeHandle(), meta.timestamp_ns);
     img.width    = meta.width;
     img.height   = meta.height;
 
