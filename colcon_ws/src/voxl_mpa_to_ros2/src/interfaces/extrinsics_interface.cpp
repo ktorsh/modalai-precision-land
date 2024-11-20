@@ -73,7 +73,7 @@ void ExtrinsicsInterface::ReadandPublishConfig(){
         double yaw = RPY[2].asFloat();
 
         tf2::Quaternion q;
-        q.setRPY(roll * M_PI / 180.0, pitch * M_PI / 180.0, yaw * M_PI / 180.0);
+        q.setEuler(pitch, roll, yaw);
         transform.transform.rotation.x = q.x();
         transform.transform.rotation.y = q.y();
         transform.transform.rotation.z = q.z();
