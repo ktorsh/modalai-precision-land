@@ -42,8 +42,8 @@
 
 static void _frame_cb(
     __attribute__((unused)) int ch,
-                            camera_image_metadata_t meta, 
-                            char* frame, 
+                            camera_image_metadata_t meta,
+                            char* frame,
                             void* context);
 
 CameraInterface::CameraInterface(
@@ -51,8 +51,36 @@ CameraInterface::CameraInterface(
     const char *    name) :
     GenericInterface(nh, name)
 {
+    
+    if (!strncmp(name, "tracking_down_misp_grey", strlen("tracking_down_misp_grey"))) {
+      _frame_id = "tracking_down";
+    }
 
-    m_imageMsg.header.frame_id = name;
+    else if (!strncmp(name, "tracking_down_misp_norm", strlen("tracking_down_misp_norm"))) {
+      _frame_id = "tracking_down";
+    }
+
+    else if (!strncmp(name, "tracking_front_misp_grey", strlen("tracking_front_misp_grey"))) {
+      _frame_id = "tracking_front";
+    }
+
+    else if (!strncmp(name, "tracking_front_misp_norm", strlen("tracking_front_misp_norm"))) {
+      _frame_id = "tracking_front";
+    }
+
+    else if (!strncmp(name, "tracking_rear_misp_grey", strlen("tracking_rear_misp_grey"))) {
+      _frame_id = "tracking_rear";
+    }
+
+    else if (!strncmp(name, "tracking_rear_misp_norm", strlen("tracking_rear_misp_norm"))) {
+      _frame_id = "tracking_rear";
+    }
+
+    else {
+      _frame_id = name;
+    }
+
+    m_imageMsg.header.frame_id = _frame_id;
     m_imageMsg.is_bigendian    = false;
 
     pipe_client_set_camera_helper_cb(m_channel, _frame_cb, this);
@@ -67,7 +95,7 @@ CameraInterface::CameraInterface(
 }
 
 void CameraInterface::AdvertiseTopics(){
-    
+
 
     image_transport::ImageTransport it(m_rosNodeHandle);
 
@@ -84,12 +112,15 @@ void CameraInterface::AdvertiseTopics(){
     std::string cv_intrinsics_path = "/data/modalai/opencv_" + pipeName + "_intrinsics.yml";
     if(access(cv_intrinsics_path.c_str(), F_OK) == 0){
         YAML::Node config = YAML::LoadFile(cv_intrinsics_path);
+
+        // Transform Frame id
+        m_cameraInfo.header.frame_id = _frame_id;
         
         // Getting static values from yaml
         m_cameraInfo.width = config["width"].as<uint32_t>();
         m_cameraInfo.height = config["height"].as<uint32_t>();
         m_cameraInfo.distortion_model = config["distortion_model"].as<std::string>();
-        
+
         // Getting rotation info
         m_cameraInfo.r = {1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0};
 
@@ -107,6 +138,7 @@ void CameraInterface::AdvertiseTopics(){
         m_cameraInfo.p = {camera_matrix_data[0], camera_matrix_data[1], camera_matrix_data[2], 0.0,
                     camera_matrix_data[3], camera_matrix_data[4], camera_matrix_data[5], 0.0,
                     camera_matrix_data[6], camera_matrix_data[7], camera_matrix_data[8], 0.0};
+
     }
     this->setPublishingState(true);
 
@@ -115,7 +147,7 @@ void CameraInterface::AdvertiseTopics(){
 }
 
 void CameraInterface::StopAdvertising(){
-    
+
     this->setPublishingState(false);
     m_rosImagePublisher.shutdown();
 
@@ -130,8 +162,8 @@ int CameraInterface::GetNumClients(){
 // helper callback whenever a frame arrives
 static void _frame_cb(
     __attribute__((unused)) int ch,
-                            camera_image_metadata_t meta, 
-                            char* frame, 
+                            camera_image_metadata_t meta,
+                            char* frame,
                             void* context)
 {
 
@@ -149,7 +181,7 @@ static void _frame_cb(
     img.height   = meta.height;
 
     camera_info.header.stamp = img.header.stamp;
-    camera_info.header.frame_id = std::to_string(meta.frame_id);
+    // camera_info.header.frame_id = std::to_string(meta.frame_id);
 
     if(interface->getPublishingState()){
         camera_info_publisher->publish(camera_info);
@@ -215,13 +247,13 @@ static void _frame_cb(
         int dataSize = img.step * img.height;
         img.data.resize(dataSize);
 
-        for (int i = 0; i < meta.height; ++i) 
+        for (int i = 0; i < meta.height; ++i)
         {
             for (int j = 0; j < meta.width; j += 2){
 
                 int uyvy_index = i * meta.width * 2 + j * 2;
                 int yuv_index = i * meta.width * 2 + j * 2;
-                
+
                 // Copy UYVY data to YUV422 format (YUYV)
                 img.data[yuv_index] = frame[uyvy_index + 1];     // Y1
                 img.data[yuv_index + 1] = frame[uyvy_index];     // U
@@ -230,7 +262,7 @@ static void _frame_cb(
 
             }
         }
-       
+
         publisher.publish(img);
 
     } else {

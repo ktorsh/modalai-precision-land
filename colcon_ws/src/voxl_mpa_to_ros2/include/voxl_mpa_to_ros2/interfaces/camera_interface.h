@@ -85,6 +85,6 @@ private:
     sensor_msgs::msg::CameraInfo                m_cameraInfo;
     image_transport::Publisher             m_rosImagePublisher;          ///< Image publisher
     rclcpp::Publisher<sensor_msgs::msg::CameraInfo>::SharedPtr          m_rosCameraInfoPublisher;
-
+    std::string _frame_id;
 };
 #endif
