@@ -38,7 +38,7 @@ Source the ros2 foxy setup script:
 
 You can then run the nodes with: 
 
-```ros2 launch voxl_mpa_to_ros2 voxl_mpa_to_ros2.launch```
+```ros2 run voxl_mpa_to_ros2 voxl_mpa_to_ros2_node```
 
 ##### Supported Interfaces
 The current supported mpa->ros2 translations are:  
