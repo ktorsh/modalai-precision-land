@@ -36,6 +36,8 @@
 #include <iostream>
 #include <unistd.h>
 
+#include <nlohmann/json.hpp>
+#include <fstream>
 
 #include "voxl_mpa_to_ros2/utils/camera_helpers.h"
 #include "voxl_mpa_to_ros2/interfaces/camera_interface.h"
@@ -51,6 +53,8 @@ CameraInterface::CameraInterface(
     const char *    name) :
     GenericInterface(nh, name)
 {
+    // Generic interface name
+    ginterface_name = name;
     
     if (!strncmp(name, "tracking_down_misp_grey", strlen("tracking_down_misp_grey"))) {
       _frame_id = "tracking_down";
@@ -82,6 +86,8 @@ CameraInterface::CameraInterface(
 
     m_imageMsg.header.frame_id = _frame_id;
     m_imageMsg.is_bigendian    = false;
+    
+    ginterface_name = name;
 
     pipe_client_set_camera_helper_cb(m_channel, _frame_cb, this);
 
@@ -89,6 +95,25 @@ CameraInterface::CameraInterface(
                 EN_PIPE_CLIENT_CAMERA_HELPER | CLIENT_FLAG_START_PAUSED, 0)){
         pipe_client_close(m_channel);//Make sure we unclaim the channel
         throw -1;
+    }
+
+    try {
+        // Construct the file path using the provided name
+        std::string file_path = std::string("/run/mpa/") + name + "/info";
+
+        // Read the JSON file
+        std::ifstream file(file_path);
+        if (!file.is_open()) {
+            throw std::runtime_error("Failed to open the file: " + file_path);
+        }
+
+        // Parse the JSON file
+        nlohmann::json json_data;
+        file >> json_data;
+
+        frame_format = json_data["int_format"];
+    } catch (const std::exception &e) {
+        frame_format = 0;
     }
 
     this->setPublishingState(false);
@@ -99,8 +124,12 @@ void CameraInterface::AdvertiseTopics(){
 
     image_transport::ImageTransport it(m_rosNodeHandle);
 
-    m_rosImagePublisher = it.advertise(m_pipeName, 1);
-
+    if (frame_format == IMAGE_FORMAT_H265 || frame_format == IMAGE_FORMAT_H264) {
+      m_rosCompressedPublisher_ = m_rosNodeHandle->create_publisher<sensor_msgs::msg::CompressedImage>(m_pipeName, 1);
+    }
+    else {
+      m_rosImagePublisher = it.advertise(m_pipeName, 1);
+    }
     std::string pipeName = std::string(m_pipeName);
     std::string cameraInfoTopic = pipeName + "/camera_info";
 
@@ -143,20 +172,27 @@ void CameraInterface::AdvertiseTopics(){
     this->setPublishingState(true);
 
     m_state = ST_AD;
-
 }
 
 void CameraInterface::StopAdvertising(){
+    if (frame_format == IMAGE_FORMAT_H265 || frame_format == IMAGE_FORMAT_H264) {
+        m_rosCompressedPublisher_.reset();
+    }
+    else {
+        m_rosImagePublisher.shutdown();
 
+    }
     this->setPublishingState(false);
-    m_rosImagePublisher.shutdown();
-
     m_state = ST_CLEAN;
-
 }
 
 int CameraInterface::GetNumClients(){
-    return m_rosImagePublisher.getNumSubscribers() + m_rosCameraInfoPublisher->get_subscription_count();
+    if (frame_format == IMAGE_FORMAT_H265 || frame_format == IMAGE_FORMAT_H264) {
+        return m_rosCompressedPublisher_->get_subscription_count();
+    }
+    else {
+        return m_rosImagePublisher.getNumSubscribers() + m_rosCameraInfoPublisher->get_subscription_count();
+    }
 }
 
 // helper callback whenever a frame arrives
@@ -176,6 +212,9 @@ static void _frame_cb(
     sensor_msgs::msg::CameraInfo& camera_info = interface->GetCameraInfo();
     rclcpp::Publisher<sensor_msgs::msg::CameraInfo>::SharedPtr camera_info_publisher = interface->GetCameraInfoPublisher();
 
+    rclcpp::Publisher<sensor_msgs::msg::CompressedImage>::SharedPtr& compressed_publisher = interface->GetCompressedPublisher();
+    sensor_msgs::msg::CompressedImage& compressedImage = interface->GetCompressedImageMsg();
+
     img.header.stamp = _clock_monotonic_to_ros_time(interface->getNodeHandle(), meta.timestamp_ns);
     img.width    = meta.width;
     img.height   = meta.height;
@@ -190,10 +229,12 @@ static void _frame_cb(
 
     if(meta.format == IMAGE_FORMAT_NV21 || meta.format == IMAGE_FORMAT_NV12){
 
+        img.header.frame_id = interface->ginterface_name;
+        img.is_bigendian = false;
         img.step = meta.width * GetStepSize(IMAGE_FORMAT_YUV422);
         img.encoding = GetRosFormat(IMAGE_FORMAT_YUV422);
 
-        int dataSize = img.step * img.height;
+        int dataSize = img.step * img.height; 
         img.data.resize(dataSize);
 
         char *uv = &(frame[dataSize/2]);
@@ -203,20 +244,42 @@ static void _frame_cb(
             for(int i = 0; i < meta.height; i+=2)
             {
                 for(int j = 0; j < meta.width*2;j+=2){
+			        // Use size_t for unsigned indices
+            		size_t img_index_0 = (i * meta.width * 2) + (j * 2) + 0;
+            		size_t img_index_1 = (i * meta.width * 2) + (j * 2) + 1;
+            		size_t img_index_2 = (i * meta.width * 2) + (j * 2) + 2;
+            		size_t img_index_3 = (i * meta.width * 2) + (j * 2) + 3;
+            		size_t uv_index_0 = ((i/2) * meta.width) + j; // don't subsample chroma here
+            		size_t uv_index_1 = uv_index_0 + 1;
 
-                    img.data[(i * meta.width * 2) + (j * 2) + 0] = uv[((i/2) * meta.width) + j];
-                    img.data[(i * meta.width * 2) + (j * 2) + 1] = frame[(i * meta.width) + j];
-                    img.data[(i * meta.width * 2) + (j * 2) + 2] = uv[((i/2) * meta.width) + j + 1];
-                    img.data[(i * meta.width * 2) + (j * 2) + 3] = frame[(i * meta.width) + j + 1];
+            		// Calculate size of img.data and uv
+            		size_t uv_size = meta.width * meta.height; //Combined UV size, UVsize = Width/2 * Height * 2 (2-bytes interleaved UV) in YUV422 NV12
+            		size_t img_data_size = img.data.size() + uv_size;
 
-                    img.data[((i+1) * meta.width * 2) + (j * 2) + 0] = uv[((i/2) * meta.width) + j];
-                    img.data[((i+1) * meta.width * 2) + (j * 2) + 1] = frame[((i+1) * meta.width) + j];
-                    img.data[((i+1) * meta.width * 2) + (j * 2) + 2] = uv[((i/2) * meta.width) + j + 1];
-                    img.data[((i+1) * meta.width * 2) + (j * 2) + 3] = frame[((i+1) * meta.width) + j + 1];
+            		// Check if indices are within bounds
+            		if (img_index_0 < img_data_size && img_index_1 < img_data_size &&
+                		img_index_2 < img_data_size && img_index_3 < img_data_size &&
+                		uv_index_0 < uv_size && uv_index_1 < uv_size) {
+
+                		// Safely assign values
+                		img.data[img_index_0] = uv[uv_index_0]; 
+                		img.data[img_index_1] = frame[(i * meta.width) + j]; 
+                		img.data[img_index_2] = uv[uv_index_1]; 
+                		img.data[img_index_3] = frame[(i * meta.width) + j + 1]; 
+                		img.data[((i+1) * meta.width * 2) + (j * 2) + 0] = uv[uv_index_0]; 
+                		img.data[((i+1) * meta.width * 2) + (j * 2) + 1] = frame[((i+1) * meta.width) + j]; 
+                		img.data[((i+1) * meta.width * 2) + (j * 2) + 2] = uv[uv_index_1]; 
+                		img.data[((i+1) * meta.width * 2) + (j * 2) + 3] = frame[((i+1) * meta.width) + j + 1]; 
+            		} else {
+                		// Log or handle the out-of-bounds access
+                		std::cerr << "Index out of bounds: img_index=" << img_index_0
+                          		<< ", uv_index_0=" << uv_index_0 << ", uv_index_1:" << uv_index_1 << ", uv_size:" << uv_size << std::endl;
+            		}
+
 
                 }
             }
-        }else {
+        } else {
 
             for(int i = 0; i < meta.height; i+=2)
             {
@@ -241,6 +304,8 @@ static void _frame_cb(
 
     } else if(meta.format == IMAGE_FORMAT_YUV422_UYVY) {
 
+        img.header.frame_id = interface->ginterface_name;
+        img.is_bigendian = false;
         img.step = meta.width * GetStepSize(IMAGE_FORMAT_YUV422);
         img.encoding = GetRosFormat(IMAGE_FORMAT_YUV422);
 
@@ -265,8 +330,57 @@ static void _frame_cb(
 
         publisher.publish(img);
 
+    } else if(meta.format == IMAGE_FORMAT_RAW8) {
+
+        img.header.frame_id = interface->ginterface_name;
+        img.is_bigendian = false;
+
+        img.step     = meta.width * GetStepSize(meta.format);
+       	img.encoding = GetRosFormat(meta.format);
+
+        int raw_dataSize = img.step * img.height;
+
+        img.data.resize(raw_dataSize);
+
+        memcpy(&(img.data[0]), frame, raw_dataSize);
+
+        publisher.publish(img);
+
+    } else if (meta.format == IMAGE_FORMAT_H264) {
+        // Fill out the image msg header
+        compressedImage.header.frame_id = interface->ginterface_name;
+        compressedImage.header.stamp.nanosec = meta.timestamp_ns;
+
+        // Fill out image data
+        compressedImage.format = GetRosFormat(IMAGE_FORMAT_H264);
+        int h264_dataSize = meta.size_bytes;
+
+        compressedImage.data.resize(h264_dataSize);
+
+        memcpy(&(compressedImage.data[0]), frame, h264_dataSize);
+
+        compressed_publisher->publish(compressedImage);
+
+
+    } else if (meta.format == IMAGE_FORMAT_H265) {
+        // Fill out the image msg header
+        compressedImage.header.frame_id = interface->ginterface_name;
+        compressedImage.header.stamp.nanosec = meta.timestamp_ns;
+
+        // Fill out image data
+        compressedImage.format = GetRosFormat(IMAGE_FORMAT_H265);
+        int dataSize = meta.size_bytes;
+
+        compressedImage.data.resize(dataSize);
+
+        memcpy(&(compressedImage.data[0]), frame, dataSize);
+
+        compressed_publisher->publish(compressedImage);
+
     } else {
 
+        img.header.frame_id = interface->ginterface_name;
+        img.is_bigendian = false;
         img.step     = meta.width * GetStepSize(meta.format);
         img.encoding = GetRosFormat(meta.format);
 

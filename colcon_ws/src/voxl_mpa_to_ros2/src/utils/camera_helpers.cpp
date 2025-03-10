@@ -75,6 +75,13 @@ const std::string GetRosFormat(int format){
 
         case IMAGE_FORMAT_FLOAT32 :
             return sensor_msgs::image_encodings::TYPE_32FC1;
+
+        case IMAGE_FORMAT_H264 :
+            return "h264";
+
+        case IMAGE_FORMAT_H265 :
+            return "h265";
+            
         default:
             return std::string("UNSUPPORTED"); //unsupported
     }

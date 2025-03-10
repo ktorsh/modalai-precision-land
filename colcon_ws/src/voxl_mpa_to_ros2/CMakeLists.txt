@@ -62,7 +62,10 @@ find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(image_transport REQUIRED)
 find_package(voxl_msgs REQUIRED)
-find_package(jsoncpp REQUIRED)
+find_package(nlohmann_json REQUIRED
+    CONFIG
+    PATHS "/usr/lib/cmake/"
+)
 
 find_path(YAML_CPP_INCLUDE_DIR yaml-cpp/yaml.h)
 find_library(YAML_CPP_LIBRARY yaml-cpp)
@@ -107,7 +110,7 @@ target_link_libraries(${PROJECT_NAME}_node
 	${YAML_CPP_LIBRARY}
 	/usr/lib64/libmodal_pipe.so
 	/usr/lib64/libmodal_json.so
-	jsoncpp_lib
+  nlohmann_json
 )
 
 install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})

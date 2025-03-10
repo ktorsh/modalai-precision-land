@@ -8,13 +8,15 @@ if ! [ -f $FOXYFILE ]; then
 fi
 
 echo "Installing some apt dependencies"
-apt install -y python3-pip python3-numpy libtinyxml2-6 libyaml-cpp-dev
+apt install -y python3-pip python3-numpy libtinyxml2-6 nlohmann-json-dev libyaml-cpp-dev
 
 echo "making sure pip is installed and upgraded"
 python3 -m pip install pip -U
 
 echo "pip installing some dependencies"
 python3 -m pip install colcon-common-extensions lark netifaces
+python3 -m pip uninstall -y empy
+python3 -m pip install empy==3.3.4
 
 echo "enabling voxl-microdds-agent"
 systemctl enable --now voxl-microdds-agent
