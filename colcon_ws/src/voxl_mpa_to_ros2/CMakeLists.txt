@@ -67,7 +67,14 @@ find_package(nlohmann_json REQUIRED
     PATHS "/usr/lib/cmake/"
 )
 
-include_directories(include) 
+find_path(YAML_CPP_INCLUDE_DIR yaml-cpp/yaml.h)
+find_library(YAML_CPP_LIBRARY yaml-cpp)
+
+include_directories(
+  ${YAML_CPP_INCLUDE_DIR}
+  ${jsoncpp_INCLUDE_DIRS}
+  include
+)
 
 set(dependencies
   rclcpp
@@ -92,6 +99,7 @@ add_executable(${PROJECT_NAME}_node
     src/interfaces/stereo_interface.cpp
     src/interfaces/qvio_interface.cpp
     src/interfaces/ai_detection_interface.cpp
+    src/interfaces/extrinsics_interface.cpp
     src/utils/common_utils.cpp
     src/utils/camera_helpers.cpp
     src/interface_manager.cpp
@@ -99,6 +107,7 @@ add_executable(${PROJECT_NAME}_node
 )
 ament_target_dependencies(${PROJECT_NAME}_node ${dependencies})
 target_link_libraries(${PROJECT_NAME}_node
+	${YAML_CPP_LIBRARY}
 	/usr/lib64/libmodal_pipe.so
 	/usr/lib64/libmodal_json.so
   nlohmann_json

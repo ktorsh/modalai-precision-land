@@ -119,6 +119,21 @@ static int findPipes(InterfaceListNode *head, rclcpp::Node::SharedPtr nh){
 	InterfaceType curType = INT_NONE;
 	char buf[64];
 
+	// Start extrinsics publishing
+	std::string name_ext = "tf_static";
+	strcpy(buf, name_ext.c_str());
+	if(!listContainsPipe(head, buf)){//This interface is already open
+		InterfaceListNode *newNode = (InterfaceListNode *)malloc(sizeof(InterfaceListNode));
+		strcpy(newNode->name, buf);
+		newNode->next = NULL;
+		newNode->interface = new ExtrinsicsInterface(nh, newNode->name);
+		tail->next = newNode;
+		tail = newNode;
+		newNode->interface->AdvertiseTopics();
+		printf("Found new interface: %s\n", buf);
+	}
+
+
 	while(fgets(buf, 64, fp) != NULL){
 
 		//Empty line, about to recieve new type

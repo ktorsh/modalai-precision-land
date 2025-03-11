@@ -72,6 +72,7 @@ if [ "$MODE" == "DEB" ]; then
     apt install -y libeigen3-dev
     apt install -y python3-pip
     apt install -y python3-numpy
+    apt install -y libyaml-cpp-dev
     apt install -y nlohmann-json-dev
     python3 -m pip install pip -U
     python3 -m pip install colcon-common-extensions lark

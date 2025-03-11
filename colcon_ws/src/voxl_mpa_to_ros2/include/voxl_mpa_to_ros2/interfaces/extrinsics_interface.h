@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright 2021 ModalAI Inc.
+ * Copyright 2020 ModalAI Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -31,28 +31,37 @@
  * POSSIBILITY OF SUCH DAMAGE.
  ******************************************************************************/
 
-#ifndef ALL_MPA_INTERFACES
-#define ALL_MPA_INTERFACES
+#ifndef EXTRINSICS_MPA_INTERFACE
+#define EXTRINSICS_MPA_INTERFACE
 
-#include "voxl_mpa_to_ros2/interfaces/generic_interface.h"
-#include "voxl_mpa_to_ros2/interfaces/camera_interface.h"
-#include "voxl_mpa_to_ros2/interfaces/imu_interface.h"
-#include "voxl_mpa_to_ros2/interfaces/pose_vel_6dof_interface.h"
-#include "voxl_mpa_to_ros2/interfaces/point_cloud_interface.h"
-#include "voxl_mpa_to_ros2/interfaces/qvio_interface.h"
-#include "voxl_mpa_to_ros2/interfaces/ai_detection_interface.h"
-#include "voxl_mpa_to_ros2/interfaces/extrinsics_interface.h"
+#include <rclcpp/rclcpp.hpp>
+#include <tf2_ros/static_transform_broadcaster.h>
+#include <geometry_msgs/msg/transform_stamped.hpp>
+#include <jsoncpp/json/json.h>
+#include <fstream>
+#include <vector>
+#include <tf2/LinearMath/Quaternion.h>
 
-enum InterfaceType {
-    INT_NOT_SUPPORTED=-2,
-    INT_NONE=-1,
-    INT_CAMERA,
-    INT_STEREO,
-    INT_IMU,
-    INT_VIO,
-    INT_PC,
-    INT_6DOF,
-    INT_AI
+#include "generic_interface.h"
+
+
+class ExtrinsicsInterface: public GenericInterface
+{
+public:
+    ExtrinsicsInterface(rclcpp::Node::SharedPtr nh,
+                 const char*     name);
+
+    ~ExtrinsicsInterface() { };
+
+    int  GetNumClients();
+    void AdvertiseTopics();
+    void StopAdvertising();
+    void ReadandPublishConfig();
+
+private:
+
+    rclcpp::TimerBase::SharedPtr m_timer;                                     ///< Ros2 timer
+    std::vector<geometry_msgs::msg::TransformStamped> transforms_;
+    std::shared_ptr<tf2_ros::StaticTransformBroadcaster> br_;
 };
-
 #endif

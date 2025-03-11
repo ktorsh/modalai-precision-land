@@ -8,7 +8,7 @@ if ! [ -f $FOXYFILE ]; then
 fi
 
 echo "Installing some apt dependencies"
-apt install -y python3-pip python3-numpy libtinyxml2-6 nlohmann-json-dev
+apt install -y python3-pip python3-numpy libtinyxml2-6 nlohmann-json-dev libyaml-cpp-dev
 
 echo "making sure pip is installed and upgraded"
 python3 -m pip install pip -U

@@ -39,6 +39,9 @@
 #include <image_transport/publisher.hpp>
 #include <sensor_msgs/msg/compressed_image.hpp>
 #include <rclcpp/rclcpp.hpp>
+#include <sensor_msgs/msg/camera_info.hpp>
+#include <image_transport/image_transport.hpp>
+#include <image_transport/publisher.hpp>
 
 #include "voxl_mpa_to_ros2/interfaces/generic_interface.h"
 
@@ -59,9 +62,26 @@ public:
         return m_imageMsg;
     }
 
+    sensor_msgs::msg::CameraInfo& GetCameraInfo(){
+        return m_cameraInfo;
+    }
+
     image_transport::Publisher& GetPublisher(){
         return m_rosImagePublisher;
     }
+
+    rclcpp::Publisher<sensor_msgs::msg::CameraInfo>::SharedPtr& GetCameraInfoPublisher(){
+        return m_rosCameraInfoPublisher;
+    }
+
+    bool getPublishingState(){
+        return publishing;
+    }
+
+    void setPublishingState(bool state){
+        publishing = state; 
+    }
+
 
     // Compressed image message for encoded image formats (hires_x_encoded)
     sensor_msgs::msg::CompressedImage& GetCompressedImageMsg(){
@@ -77,11 +97,14 @@ public:
 
 private:
 
+    bool publishing = false;
     sensor_msgs::msg::CompressedImage                     m_compressedImage;   ///< Compressed Image message
     sensor_msgs::msg::Image                     m_imageMsg;                   ///< Image message
     sensor_msgs::msg::CompressedImage           m_compressedImageMsg;         ///< Compressed Image message
+    sensor_msgs::msg::CameraInfo                m_cameraInfo;
     image_transport::Publisher             m_rosImagePublisher;               ///< Image publisher
     rclcpp::Publisher<sensor_msgs::msg::CompressedImage>::SharedPtr m_rosCompressedPublisher_;       
-
+    rclcpp::Publisher<sensor_msgs::msg::CameraInfo>::SharedPtr          m_rosCameraInfoPublisher;
+    std::string _frame_id;
 };
 #endif
