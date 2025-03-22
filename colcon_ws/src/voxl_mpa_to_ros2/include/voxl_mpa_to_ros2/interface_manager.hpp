@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright 2020 ModalAI Inc.
+ * Copyright 2021 ModalAI Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -31,57 +31,34 @@
  * POSSIBILITY OF SUCH DAMAGE.
  ******************************************************************************/
 
-#ifndef CAMERA_MPA_INTERFACE
-#define CAMERA_MPA_INTERFACE
+#ifndef MPA_INTERFACE_MANAGER
+#define MPA_INTERFACE_MANAGER
 
-#include <sensor_msgs/msg/image.hpp>
-#include <image_transport/image_transport.hpp>
-#include <image_transport/publisher.hpp>
-#include <sensor_msgs/msg/compressed_image.hpp>
-#include <rclcpp/rclcpp.hpp>
+#include "voxl_mpa_to_ros2/interfaces/generic_interface.hpp"
 
-#include "voxl_mpa_to_ros2/interfaces/generic_interface.h"
+class InterfaceManager;
 
-class CameraInterface: public GenericInterface
+typedef struct ThreadData {
+
+    InterfaceManager* manager;
+    volatile bool     running;
+    rclcpp::Node::SharedPtr nh;
+
+} ThreadData;
+
+class InterfaceManager
 {
 public:
-    CameraInterface(rclcpp::Node::SharedPtr nh,
-                 const char*     name);
+    InterfaceManager(rclcpp::Node::SharedPtr nh);
 
-    ~CameraInterface() { };
-
-    int  GetNumClients();
-    void AdvertiseTopics();
-    void StopAdvertising();
-    
-    // Raw image formats (hires_x_color, grey)
-    sensor_msgs::msg::Image& GetImageMsg(){
-        return m_imageMsg;
-    }
-
-    image_transport::Publisher& GetPublisher(){
-        return m_rosImagePublisher;
-    }
-
-    // Compressed image message for encoded image formats (hires_x_encoded)
-    sensor_msgs::msg::CompressedImage& GetCompressedImageMsg(){
-        return m_compressedImageMsg;
-    }
-
-    rclcpp::Publisher<sensor_msgs::msg::CompressedImage>::SharedPtr& GetCompressedPublisher(){
-        return m_rosCompressedPublisher_;
-    }
-
-    const char * ginterface_name;
-    int frame_format;
+    void Start();
+    void Stop();
 
 private:
 
-    sensor_msgs::msg::CompressedImage                     m_compressedImage;   ///< Compressed Image message
-    sensor_msgs::msg::Image                     m_imageMsg;                   ///< Image message
-    sensor_msgs::msg::CompressedImage           m_compressedImageMsg;         ///< Compressed Image message
-    image_transport::Publisher             m_rosImagePublisher;               ///< Image publisher
-    rclcpp::Publisher<sensor_msgs::msg::CompressedImage>::SharedPtr m_rosCompressedPublisher_;       
+    pthread_t          m_thread;
+    ThreadData         m_threadData;
 
 };
-#endif
+
+#endif 

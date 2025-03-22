@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright 2020 ModalAI Inc.
+ * Copyright 2021 ModalAI Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -31,32 +31,29 @@
  * POSSIBILITY OF SUCH DAMAGE.
  ******************************************************************************/
 
-#include <stdlib.h>
-#include <unistd.h>
-#include <errno.h>
-#include <getopt.h>
-#include <signal.h>
-#include <rclcpp/rclcpp.hpp>
-#include <modal_pipe.h>
-#include "voxl_mpa_to_ros2/interface_manager.hpp"
+#ifndef ALL_MPA_INTERFACES
+#define ALL_MPA_INTERFACES
 
-InterfaceManager *manager = NULL;
+#include "voxl_mpa_to_ros2/interfaces/generic_interface.hpp"
+#include "voxl_mpa_to_ros2/interfaces/camera_interface.hpp"
+#include "voxl_mpa_to_ros2/interfaces/imu_interface.hpp"
+#include "voxl_mpa_to_ros2/interfaces/pose_vel_6dof_interface.hpp"
+#include "voxl_mpa_to_ros2/interfaces/point_cloud_interface.hpp"
+#include "voxl_mpa_to_ros2/interfaces/qvio_interface.hpp"
+#include "voxl_mpa_to_ros2/interfaces/ai_detection_interface.hpp"
+#include "voxl_mpa_to_ros2/interfaces/tag_interface.hpp"
 
-int main(int argc, char *argv[])
-{
-    setvbuf(stdout, NULL, _IONBF, BUFSIZ);
-    rclcpp::init(argc, argv);
-    
-    rclcpp::NodeOptions options;
-    auto node = rclcpp::Node::make_shared("voxl_mpa_to_ros2");
+enum InterfaceType {
+    INT_NOT_SUPPORTED=-2,
+    INT_NONE=-1,
+    INT_CAMERA,
+    INT_STEREO,
+    INT_IMU,
+    INT_VIO,
+    INT_PC,
+    INT_6DOF,
+    INT_AI,
+    INT_TAG
+};
 
-    manager = new InterfaceManager(node);
-
-    manager->Start();
-
-    rclcpp::spin(node);
-
-    manager->Stop();
-    rclcpp::shutdown();
-    return 0;
-}
+#endif

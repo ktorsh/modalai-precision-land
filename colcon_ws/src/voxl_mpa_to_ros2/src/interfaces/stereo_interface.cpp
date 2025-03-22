@@ -33,7 +33,7 @@
 #include <modal_pipe.h>
 
 #include "voxl_mpa_to_ros2/utils/camera_helpers.h"
-#include "voxl_mpa_to_ros2/interfaces/stereo_interface.h"
+#include "voxl_mpa_to_ros2/interfaces/stereo_interface.hpp"
 
 static void _frame_cb(
     __attribute__((unused)) int ch,

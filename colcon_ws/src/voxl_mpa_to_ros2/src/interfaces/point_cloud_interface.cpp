@@ -33,7 +33,7 @@
 #include <modal_pipe.h>
 #include <modal_json.h>
 
-#include "voxl_mpa_to_ros2/interfaces/point_cloud_interface.h"
+#include "voxl_mpa_to_ros2/interfaces/point_cloud_interface.hpp"
 #include "voxl_mpa_to_ros2/utils/camera_helpers.h"
 
 static void _helper_cb(

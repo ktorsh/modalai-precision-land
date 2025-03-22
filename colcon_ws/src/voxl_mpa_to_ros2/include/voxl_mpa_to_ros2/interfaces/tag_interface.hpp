@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright 2021 ModalAI Inc.
+ * Copyright 2020 ModalAI Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -31,27 +31,44 @@
  * POSSIBILITY OF SUCH DAMAGE.
  ******************************************************************************/
 
-#ifndef ALL_MPA_INTERFACES
-#define ALL_MPA_INTERFACES
+#ifndef TAG_MPA_INTERFACE
+#define TAG_MPA_INTERFACE
 
-#include "voxl_mpa_to_ros2/interfaces/generic_interface.h"
-#include "voxl_mpa_to_ros2/interfaces/camera_interface.h"
-#include "voxl_mpa_to_ros2/interfaces/imu_interface.h"
-#include "voxl_mpa_to_ros2/interfaces/pose_vel_6dof_interface.h"
-#include "voxl_mpa_to_ros2/interfaces/point_cloud_interface.h"
-#include "voxl_mpa_to_ros2/interfaces/qvio_interface.h"
-#include "voxl_mpa_to_ros2/interfaces/ai_detection_interface.h"
 
-enum InterfaceType {
-    INT_NOT_SUPPORTED=-2,
-    INT_NONE=-1,
-    INT_CAMERA,
-    INT_STEREO,
-    INT_IMU,
-    INT_VIO,
-    INT_PC,
-    INT_6DOF,
-    INT_AI
+#include <geometry_msgs/msg/pose_stamped.hpp>
+#include <nav_msgs/msg/odometry.hpp>
+#include <tf2/LinearMath/Quaternion.h>
+#include <tf2/LinearMath/Matrix3x3.h>
+
+#include "voxl_mpa_to_ros2/interfaces/generic_interface.hpp"
+
+
+class TagInterface: public GenericInterface
+{
+public:
+    TagInterface(rclcpp::Node::SharedPtr nh,
+                 const char*     name);
+
+    ~TagInterface() { };
+
+    int  GetNumClients();
+    void AdvertiseTopics();
+    void StopAdvertising();
+
+    geometry_msgs::msg::PoseStamped& GetPoseMsg(){
+        return m_poseMsg;
+    }
+    nav_msgs::msg::Odometry& GetOdomMsg(){
+        return m_odomMsg;
+    }
+
+    rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pose_pub_;
+    rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub_;
+
+private:
+
+    geometry_msgs::msg::PoseStamped           m_poseMsg;                    ///< Image message
+    nav_msgs::msg::Odometry                   m_odomMsg;                    ///< Image message
+
 };
-
 #endif

@@ -31,48 +31,44 @@
  * POSSIBILITY OF SUCH DAMAGE.
  ******************************************************************************/
 
-#ifndef STEREO_MPA_INTERFACE
-#define STEREO_MPA_INTERFACE
+#ifndef POSE_VEL_6DOF_MPA_INTERFACE
+#define POSE_VEL_6DOF_MPA_INTERFACE
 
-#include <sensor_msgs/msg/image.hpp>
-#include <image_transport/image_transport.h>
-#include <image_transport/publisher.h>
 
-#include "voxl_mpa_to_ros2/interfaces/generic_interface.h"
+#include <geometry_msgs/msg/pose_stamped.hpp>
+#include <nav_msgs/msg/odometry.hpp>
+#include <tf2/LinearMath/Quaternion.h>
+#include <tf2/LinearMath/Matrix3x3.h>
 
-class StereoInterface: public GenericInterface
+#include "voxl_mpa_to_ros2/interfaces/generic_interface.hpp"
+
+
+class PoseVel6DOFInterface: public GenericInterface
 {
 public:
-    StereoInterface(rclcpp::Node::SharedPtr nh,
+    PoseVel6DOFInterface(rclcpp::Node::SharedPtr nh,
                  const char*     name);
 
-    ~StereoInterface() { };
+    ~PoseVel6DOFInterface() { };
 
     int  GetNumClients();
     void AdvertiseTopics();
     void StopAdvertising();
 
-    sensor_msgs::msg::Image& GetImageMsgL(){
-        return m_imageMsgL;
+    geometry_msgs::msg::PoseStamped& GetPoseMsg(){
+        return m_poseMsg;
     }
-    sensor_msgs::msg::Image& GetImageMsgR(){
-        return m_imageMsgR;
+    nav_msgs::msg::Odometry& GetOdomMsg(){
+        return m_odomMsg;
     }
 
-    image_transport::Publisher& GetPublisherL(){
-        return m_rosImagePublisherL;
-    }
-    image_transport::Publisher& GetPublisherR(){
-        return m_rosImagePublisherR;
-    }
+    rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pose_pub_;
+    rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub_;
 
 private:
 
-    sensor_msgs::msg::Image                m_imageMsgL;                   ///< Image message
-    image_transport::Publisher             m_rosImagePublisherL;          ///< Image publisher
-
-    sensor_msgs::msg::Image                m_imageMsgR;                   ///< Image message
-    image_transport::Publisher             m_rosImagePublisherR;          ///< Image publisher
+    geometry_msgs::msg::PoseStamped           m_poseMsg;                    ///< Image message
+    nav_msgs::msg::Odometry                   m_odomMsg;                    ///< Image message
 
 };
 #endif

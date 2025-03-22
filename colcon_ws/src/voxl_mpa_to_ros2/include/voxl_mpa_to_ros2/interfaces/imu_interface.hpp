@@ -31,44 +31,37 @@
  * POSSIBILITY OF SUCH DAMAGE.
  ******************************************************************************/
 
-#ifndef POSE_VEL_6DOF_MPA_INTERFACE
-#define POSE_VEL_6DOF_MPA_INTERFACE
+#ifndef IMU_MPA_INTERFACE
+#define IMU_MPA_INTERFACE
 
 
-#include <geometry_msgs/msg/pose_stamped.hpp>
-#include <nav_msgs/msg/odometry.hpp>
-#include <tf2/LinearMath/Quaternion.h>
-#include <tf2/LinearMath/Matrix3x3.h>
+#include <sensor_msgs/msg/imu.hpp>
 
-#include "voxl_mpa_to_ros2/interfaces/generic_interface.h"
+#include "voxl_mpa_to_ros2/interfaces/generic_interface.hpp"
 
 
-class PoseVel6DOFInterface: public GenericInterface
+class IMUInterface: public GenericInterface
 {
 public:
-    PoseVel6DOFInterface(rclcpp::Node::SharedPtr nh,
+    IMUInterface(rclcpp::Node::SharedPtr nh,
                  const char*     name);
 
-    ~PoseVel6DOFInterface() { };
+    ~IMUInterface() { };
 
     int  GetNumClients();
     void AdvertiseTopics();
     void StopAdvertising();
 
-    geometry_msgs::msg::PoseStamped& GetPoseMsg(){
-        return m_poseMsg;
-    }
-    nav_msgs::msg::Odometry& GetOdomMsg(){
-        return m_odomMsg;
+    sensor_msgs::msg::Imu& GetImuMsg(){
+        return m_imuMsg;
     }
 
-    rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pose_pub_;
-    rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub_;
+    rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr imu_pub_;
 
 private:
 
-    geometry_msgs::msg::PoseStamped           m_poseMsg;                    ///< Image message
-    nav_msgs::msg::Odometry                   m_odomMsg;                    ///< Image message
+    sensor_msgs::msg::Imu               m_imuMsg;                ///< Imu message
+    bool rotate_to_enu_;
 
 };
 #endif

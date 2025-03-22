@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright 2021 ModalAI Inc.
+ * Copyright 2020 ModalAI Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -31,34 +31,43 @@
  * POSSIBILITY OF SUCH DAMAGE.
  ******************************************************************************/
 
-#ifndef MPA_INTERFACE_MANAGER
-#define MPA_INTERFACE_MANAGER
+#ifndef QVIO_MPA_INTERFACE
+#define QVIO_MPA_INTERFACE
 
-#include "voxl_mpa_to_ros2/interfaces/generic_interface.h"
+#include <geometry_msgs/msg/pose_stamped.hpp>
+#include <nav_msgs/msg/odometry.hpp>
+#include <tf2/LinearMath/Quaternion.h>
+#include <tf2/LinearMath/Matrix3x3.h>
 
-class InterfaceManager;
+#include "voxl_mpa_to_ros2/interfaces/generic_interface.hpp"
 
-typedef struct ThreadData {
-
-    InterfaceManager* manager;
-    volatile bool     running;
-    rclcpp::Node::SharedPtr nh;
-
-} ThreadData;
-
-class InterfaceManager
+class QVIOInterface: public GenericInterface
 {
 public:
-    InterfaceManager(rclcpp::Node::SharedPtr nh);
+    QVIOInterface(rclcpp::Node::SharedPtr nh,
+                 const char*     name);
 
-    void Start();
-    void Stop();
+    ~QVIOInterface() { };
+
+    int  GetNumClients();
+    void AdvertiseTopics();
+    void StopAdvertising();
+
+    geometry_msgs::msg::PoseStamped& GetPoseMsg(){
+        return m_poseMsg;
+    }
+    nav_msgs::msg::Odometry& GetOdomMsg(){
+        return m_odomMsg;
+    }
+
+    rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pose_pub_;
+    rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub_;
 
 private:
 
-    pthread_t          m_thread;
-    ThreadData         m_threadData;
+    geometry_msgs::msg::PoseStamped           m_poseMsg;                    ///< Image message
+    nav_msgs::msg::Odometry                   m_odomMsg;                    ///< Image message
 
 };
+#endif
 
-#endif 

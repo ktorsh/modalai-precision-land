@@ -33,8 +33,8 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "voxl_mpa_to_ros2/interfaces/all_interfaces.h"
-#include "voxl_mpa_to_ros2/interface_manager.h"
+#include "voxl_mpa_to_ros2/interfaces/all_interfaces.hpp"
+#include "voxl_mpa_to_ros2/interface_manager.hpp"
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -148,6 +148,8 @@ static int findPipes(InterfaceListNode *head, rclcpp::Node::SharedPtr nh){
 				curType = INT_VIO;
 			} else if(!strncmp(buf, "ai_detection_t", strlen("ai_detection_t"))){
 				curType = INT_AI;
+			} else if(!strncmp(buf, "tag_detection_t", strlen("tag_detection_t"))){
+				curType = INT_TAG;
 			} else {
 				curType = INT_NOT_SUPPORTED;
 			} 
@@ -210,6 +212,10 @@ static int findPipes(InterfaceListNode *head, rclcpp::Node::SharedPtr nh){
 
 					case INT_AI:
 						newNode->interface = new AiDetectionInterface(nh, newNode->name);
+						break;
+
+					case INT_TAG:
+						newNode->interface = new TagInterface(nh, newNode->name);
 						break;
 
 					default: //Should never get here

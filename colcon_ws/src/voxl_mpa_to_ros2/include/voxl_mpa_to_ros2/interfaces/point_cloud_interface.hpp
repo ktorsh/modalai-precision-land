@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright 2023 ModalAI Inc.
+ * Copyright 2020 ModalAI Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -31,56 +31,35 @@
  * POSSIBILITY OF SUCH DAMAGE.
  ******************************************************************************/
 
-#ifndef AI_DETECTION_MPA_INTERFACE
-#define AI_DETECTION_MPA_INTERFACE
+#ifndef PC_MPA_INTERFACE
+#define PC_MPA_INTERFACE
 
-#include "voxl_mpa_to_ros2/interfaces/generic_interface.h"
-#include "voxl_msgs/msg/aidetection.hpp"
+#include <sensor_msgs/msg/point_cloud2.hpp>
 
+#include "generic_interface.hpp"
 
-#define BUF_LEN 64
-#define AI_DETECTION_MAGIC_NUMBER (0x564F584C)
-
-// struct containing all relevant metadata to a tflite object detection
-typedef struct ai_detection_t {
-	uint32_t magic_number;
-    int64_t timestamp_ns;
-    uint32_t class_id;
-    int32_t  frame_id;
-    char class_name[BUF_LEN];
-    char cam[BUF_LEN];
-    float class_confidence;
-    float detection_confidence;
-    float x_min;
-    float y_min;
-    float x_max;
-    float y_max;
-} __attribute__((packed)) ai_detection_t;
-
-
-class AiDetectionInterface: public GenericInterface
+class PointCloudInterface: public GenericInterface
 {
 public:
-    AiDetectionInterface(rclcpp::Node::SharedPtr nh,
+    PointCloudInterface(rclcpp::Node::SharedPtr nh,
                  const char*     name);
 
-    ~AiDetectionInterface() { };
+    ~PointCloudInterface() { };
 
     int  GetNumClients();
     void AdvertiseTopics();
     void StopAdvertising();
 
-    voxl_msgs::msg::Aidetection& GetObjMsg(){
-        return m_objMsg;
+    sensor_msgs::msg::PointCloud2& GetPCMsg(){
+        return m_pcMsg;
     }
 
-    rclcpp::Publisher<voxl_msgs::msg::Aidetection>::SharedPtr ai_detection_pub_;
+    uint m_inputPCType = -1;
+    rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr m_pcPublisher;
 
 private:
 
-    voxl_msgs::msg::Aidetection m_objMsg;
+    sensor_msgs::msg::PointCloud2               m_pcMsg;                        ///< Point cloud message
 
 };
-
-#endif //AI_DETECTION_MPA_INTERFACE
-
+#endif

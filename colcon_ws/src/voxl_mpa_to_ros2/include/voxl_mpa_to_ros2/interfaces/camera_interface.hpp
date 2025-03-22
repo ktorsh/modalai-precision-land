@@ -31,43 +31,57 @@
  * POSSIBILITY OF SUCH DAMAGE.
  ******************************************************************************/
 
-#ifndef QVIO_MPA_INTERFACE
-#define QVIO_MPA_INTERFACE
+#ifndef CAMERA_MPA_INTERFACE
+#define CAMERA_MPA_INTERFACE
 
-#include <geometry_msgs/msg/pose_stamped.hpp>
-#include <nav_msgs/msg/odometry.hpp>
-#include <tf2/LinearMath/Quaternion.h>
-#include <tf2/LinearMath/Matrix3x3.h>
+#include <sensor_msgs/msg/image.hpp>
+#include <image_transport/image_transport.hpp>
+#include <image_transport/publisher.hpp>
+#include <sensor_msgs/msg/compressed_image.hpp>
+#include <rclcpp/rclcpp.hpp>
 
-#include "voxl_mpa_to_ros2/interfaces/generic_interface.h"
+#include "voxl_mpa_to_ros2/interfaces/generic_interface.hpp"
 
-class QVIOInterface: public GenericInterface
+class CameraInterface: public GenericInterface
 {
 public:
-    QVIOInterface(rclcpp::Node::SharedPtr nh,
+    CameraInterface(rclcpp::Node::SharedPtr nh,
                  const char*     name);
 
-    ~QVIOInterface() { };
+    ~CameraInterface() { };
 
     int  GetNumClients();
     void AdvertiseTopics();
     void StopAdvertising();
-
-    geometry_msgs::msg::PoseStamped& GetPoseMsg(){
-        return m_poseMsg;
-    }
-    nav_msgs::msg::Odometry& GetOdomMsg(){
-        return m_odomMsg;
+    
+    // Raw image formats (hires_x_color, grey)
+    sensor_msgs::msg::Image& GetImageMsg(){
+        return m_imageMsg;
     }
 
-    rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pose_pub_;
-    rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub_;
+    image_transport::Publisher& GetPublisher(){
+        return m_rosImagePublisher;
+    }
+
+    // Compressed image message for encoded image formats (hires_x_encoded)
+    sensor_msgs::msg::CompressedImage& GetCompressedImageMsg(){
+        return m_compressedImageMsg;
+    }
+
+    rclcpp::Publisher<sensor_msgs::msg::CompressedImage>::SharedPtr& GetCompressedPublisher(){
+        return m_rosCompressedPublisher_;
+    }
+
+    const char * ginterface_name;
+    int frame_format;
 
 private:
 
-    geometry_msgs::msg::PoseStamped           m_poseMsg;                    ///< Image message
-    nav_msgs::msg::Odometry                   m_odomMsg;                    ///< Image message
+    sensor_msgs::msg::CompressedImage                     m_compressedImage;   ///< Compressed Image message
+    sensor_msgs::msg::Image                     m_imageMsg;                   ///< Image message
+    sensor_msgs::msg::CompressedImage           m_compressedImageMsg;         ///< Compressed Image message
+    image_transport::Publisher             m_rosImagePublisher;               ///< Image publisher
+    rclcpp::Publisher<sensor_msgs::msg::CompressedImage>::SharedPtr m_rosCompressedPublisher_;       
 
 };
 #endif
-
