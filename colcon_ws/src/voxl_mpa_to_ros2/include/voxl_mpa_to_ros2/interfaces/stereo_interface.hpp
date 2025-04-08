@@ -31,35 +31,48 @@
  * POSSIBILITY OF SUCH DAMAGE.
  ******************************************************************************/
 
-#ifndef PC_MPA_INTERFACE
-#define PC_MPA_INTERFACE
+#ifndef STEREO_MPA_INTERFACE
+#define STEREO_MPA_INTERFACE
 
-#include <sensor_msgs/msg/point_cloud2.hpp>
+#include <sensor_msgs/msg/image.hpp>
+#include <image_transport/image_transport.h>
+#include <image_transport/publisher.h>
 
-#include "generic_interface.h"
+#include "voxl_mpa_to_ros2/interfaces/generic_interface.hpp"
 
-class PointCloudInterface: public GenericInterface
+class StereoInterface: public GenericInterface
 {
 public:
-    PointCloudInterface(rclcpp::Node::SharedPtr nh,
+    StereoInterface(rclcpp::Node::SharedPtr nh,
                  const char*     name);
 
-    ~PointCloudInterface() { };
+    ~StereoInterface() { };
 
     int  GetNumClients();
     void AdvertiseTopics();
     void StopAdvertising();
 
-    sensor_msgs::msg::PointCloud2& GetPCMsg(){
-        return m_pcMsg;
+    sensor_msgs::msg::Image& GetImageMsgL(){
+        return m_imageMsgL;
+    }
+    sensor_msgs::msg::Image& GetImageMsgR(){
+        return m_imageMsgR;
     }
 
-    uint m_inputPCType = -1;
-    rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr m_pcPublisher;
+    image_transport::Publisher& GetPublisherL(){
+        return m_rosImagePublisherL;
+    }
+    image_transport::Publisher& GetPublisherR(){
+        return m_rosImagePublisherR;
+    }
 
 private:
 
-    sensor_msgs::msg::PointCloud2               m_pcMsg;                        ///< Point cloud message
+    sensor_msgs::msg::Image                m_imageMsgL;                   ///< Image message
+    image_transport::Publisher             m_rosImagePublisherL;          ///< Image publisher
+
+    sensor_msgs::msg::Image                m_imageMsgR;                   ///< Image message
+    image_transport::Publisher             m_rosImagePublisherR;          ///< Image publisher
 
 };
 #endif

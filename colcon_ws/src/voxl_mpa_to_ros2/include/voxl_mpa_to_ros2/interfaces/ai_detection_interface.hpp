@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright 2020 ModalAI Inc.
+ * Copyright 2023 ModalAI Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -31,37 +31,56 @@
  * POSSIBILITY OF SUCH DAMAGE.
  ******************************************************************************/
 
-#ifndef IMU_MPA_INTERFACE
-#define IMU_MPA_INTERFACE
+#ifndef AI_DETECTION_MPA_INTERFACE
+#define AI_DETECTION_MPA_INTERFACE
+
+#include "voxl_mpa_to_ros2/interfaces/generic_interface.hpp"
+#include "voxl_msgs/msg/aidetection.hpp"
 
 
-#include <sensor_msgs/msg/imu.hpp>
+#define BUF_LEN 64
+#define AI_DETECTION_MAGIC_NUMBER (0x564F584C)
 
-#include "voxl_mpa_to_ros2/interfaces/generic_interface.h"
+// struct containing all relevant metadata to a tflite object detection
+typedef struct ai_detection_t {
+	uint32_t magic_number;
+    int64_t timestamp_ns;
+    uint32_t class_id;
+    int32_t  frame_id;
+    char class_name[BUF_LEN];
+    char cam[BUF_LEN];
+    float class_confidence;
+    float detection_confidence;
+    float x_min;
+    float y_min;
+    float x_max;
+    float y_max;
+} __attribute__((packed)) ai_detection_t;
 
 
-class IMUInterface: public GenericInterface
+class AiDetectionInterface: public GenericInterface
 {
 public:
-    IMUInterface(rclcpp::Node::SharedPtr nh,
+    AiDetectionInterface(rclcpp::Node::SharedPtr nh,
                  const char*     name);
 
-    ~IMUInterface() { };
+    ~AiDetectionInterface() { };
 
     int  GetNumClients();
     void AdvertiseTopics();
     void StopAdvertising();
 
-    sensor_msgs::msg::Imu& GetImuMsg(){
-        return m_imuMsg;
+    voxl_msgs::msg::Aidetection& GetObjMsg(){
+        return m_objMsg;
     }
 
-    rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr imu_pub_;
+    rclcpp::Publisher<voxl_msgs::msg::Aidetection>::SharedPtr ai_detection_pub_;
 
 private:
 
-    sensor_msgs::msg::Imu               m_imuMsg;                ///< Imu message
-    bool rotate_to_enu_;
+    voxl_msgs::msg::Aidetection m_objMsg;
 
 };
-#endif
+
+#endif //AI_DETECTION_MPA_INTERFACE
+

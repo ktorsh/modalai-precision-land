@@ -31,25 +31,23 @@
  * POSSIBILITY OF SUCH DAMAGE.
  ******************************************************************************/
 
-#ifndef POSE_VEL_6DOF_MPA_INTERFACE
-#define POSE_VEL_6DOF_MPA_INTERFACE
-
+#ifndef QVIO_MPA_INTERFACE
+#define QVIO_MPA_INTERFACE
 
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <nav_msgs/msg/odometry.hpp>
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2/LinearMath/Matrix3x3.h>
 
-#include "voxl_mpa_to_ros2/interfaces/generic_interface.h"
+#include "voxl_mpa_to_ros2/interfaces/generic_interface.hpp"
 
-
-class PoseVel6DOFInterface: public GenericInterface
+class QVIOInterface: public GenericInterface
 {
 public:
-    PoseVel6DOFInterface(rclcpp::Node::SharedPtr nh,
+    QVIOInterface(rclcpp::Node::SharedPtr nh,
                  const char*     name);
 
-    ~PoseVel6DOFInterface() { };
+    ~QVIOInterface() { };
 
     int  GetNumClients();
     void AdvertiseTopics();
@@ -72,3 +70,4 @@ private:
 
 };
 #endif
+

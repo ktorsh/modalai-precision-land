@@ -36,7 +36,7 @@
 #include <fstream>
 
 #include "voxl_mpa_to_ros2/utils/camera_helpers.h"
-#include "voxl_mpa_to_ros2/interfaces/camera_interface.h"
+#include "voxl_mpa_to_ros2/interfaces/camera_interface.hpp"
 
 static void _frame_cb(
     __attribute__((unused)) int ch,

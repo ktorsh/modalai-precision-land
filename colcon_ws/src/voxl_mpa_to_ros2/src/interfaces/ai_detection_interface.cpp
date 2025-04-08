@@ -31,7 +31,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  ******************************************************************************/
 #include <modal_pipe.h>
-#include "voxl_mpa_to_ros2/interfaces/ai_detection_interface.h"
+#include "voxl_mpa_to_ros2/interfaces/ai_detection_interface.hpp"
 
 // big buffer here, potentially lots of detections/frame
 #define OBJ_BUF_LEN (sizeof(ai_detection_t) * 500)

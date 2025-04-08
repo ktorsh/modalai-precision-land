@@ -31,48 +31,37 @@
  * POSSIBILITY OF SUCH DAMAGE.
  ******************************************************************************/
 
-#ifndef STEREO_MPA_INTERFACE
-#define STEREO_MPA_INTERFACE
+#ifndef IMU_MPA_INTERFACE
+#define IMU_MPA_INTERFACE
 
-#include <sensor_msgs/msg/image.hpp>
-#include <image_transport/image_transport.h>
-#include <image_transport/publisher.h>
 
-#include "voxl_mpa_to_ros2/interfaces/generic_interface.h"
+#include <sensor_msgs/msg/imu.hpp>
 
-class StereoInterface: public GenericInterface
+#include "voxl_mpa_to_ros2/interfaces/generic_interface.hpp"
+
+
+class IMUInterface: public GenericInterface
 {
 public:
-    StereoInterface(rclcpp::Node::SharedPtr nh,
+    IMUInterface(rclcpp::Node::SharedPtr nh,
                  const char*     name);
 
-    ~StereoInterface() { };
+    ~IMUInterface() { };
 
     int  GetNumClients();
     void AdvertiseTopics();
     void StopAdvertising();
 
-    sensor_msgs::msg::Image& GetImageMsgL(){
-        return m_imageMsgL;
-    }
-    sensor_msgs::msg::Image& GetImageMsgR(){
-        return m_imageMsgR;
+    sensor_msgs::msg::Imu& GetImuMsg(){
+        return m_imuMsg;
     }
 
-    image_transport::Publisher& GetPublisherL(){
-        return m_rosImagePublisherL;
-    }
-    image_transport::Publisher& GetPublisherR(){
-        return m_rosImagePublisherR;
-    }
+    rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr imu_pub_;
 
 private:
 
-    sensor_msgs::msg::Image                m_imageMsgL;                   ///< Image message
-    image_transport::Publisher             m_rosImagePublisherL;          ///< Image publisher
-
-    sensor_msgs::msg::Image                m_imageMsgR;                   ///< Image message
-    image_transport::Publisher             m_rosImagePublisherR;          ///< Image publisher
+    sensor_msgs::msg::Imu               m_imuMsg;                ///< Imu message
+    bool rotate_to_enu_;
 
 };
 #endif

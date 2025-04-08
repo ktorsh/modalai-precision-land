@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright 2021 ModalAI Inc.
+ * Copyright 2020 ModalAI Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -31,34 +31,39 @@
  * POSSIBILITY OF SUCH DAMAGE.
  ******************************************************************************/
 
-#ifndef MPA_INTERFACE_MANAGER
-#define MPA_INTERFACE_MANAGER
+#ifndef TAG_MPA_INTERFACE
+#define TAG_MPA_INTERFACE
 
-#include "voxl_mpa_to_ros2/interfaces/generic_interface.h"
 
-class InterfaceManager;
+#include <geometry_msgs/msg/pose_stamped.hpp>
+#include <nav_msgs/msg/odometry.hpp>
+#include <tf2/LinearMath/Quaternion.h>
+#include <tf2/LinearMath/Matrix3x3.h>
 
-typedef struct ThreadData {
+#include "voxl_mpa_to_ros2/interfaces/generic_interface.hpp"
 
-    InterfaceManager* manager;
-    volatile bool     running;
-    rclcpp::Node::SharedPtr nh;
 
-} ThreadData;
-
-class InterfaceManager
+class TagInterface: public GenericInterface
 {
 public:
-    InterfaceManager(rclcpp::Node::SharedPtr nh);
+    TagInterface(rclcpp::Node::SharedPtr nh,
+                 const char*     name);
 
-    void Start();
-    void Stop();
+    ~TagInterface() { };
+
+    int  GetNumClients();
+    void AdvertiseTopics();
+    void StopAdvertising();
+
+    geometry_msgs::msg::PoseStamped& GetPoseMsg(){
+        return m_poseMsg;
+    }
+
+    rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pose_pub_;
 
 private:
 
-    pthread_t          m_thread;
-    ThreadData         m_threadData;
+    geometry_msgs::msg::PoseStamped           m_poseMsg;                    ///< Image message
 
 };
-
-#endif 
+#endif

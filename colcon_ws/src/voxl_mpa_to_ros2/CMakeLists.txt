@@ -96,6 +96,7 @@ add_executable(${PROJECT_NAME}_node
     src/utils/camera_helpers.cpp
     src/interface_manager.cpp
     src/mpa_ros_node.cpp
+    src/interfaces/tag_interface.cpp
 )
 ament_target_dependencies(${PROJECT_NAME}_node ${dependencies})
 target_link_libraries(${PROJECT_NAME}_node

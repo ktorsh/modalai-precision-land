@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright 2021 ModalAI Inc.
+ * Copyright 2020 ModalAI Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -31,27 +31,57 @@
  * POSSIBILITY OF SUCH DAMAGE.
  ******************************************************************************/
 
-#ifndef ALL_MPA_INTERFACES
-#define ALL_MPA_INTERFACES
+#ifndef CAMERA_MPA_INTERFACE
+#define CAMERA_MPA_INTERFACE
 
-#include "voxl_mpa_to_ros2/interfaces/generic_interface.h"
-#include "voxl_mpa_to_ros2/interfaces/camera_interface.h"
-#include "voxl_mpa_to_ros2/interfaces/imu_interface.h"
-#include "voxl_mpa_to_ros2/interfaces/pose_vel_6dof_interface.h"
-#include "voxl_mpa_to_ros2/interfaces/point_cloud_interface.h"
-#include "voxl_mpa_to_ros2/interfaces/qvio_interface.h"
-#include "voxl_mpa_to_ros2/interfaces/ai_detection_interface.h"
+#include <sensor_msgs/msg/image.hpp>
+#include <image_transport/image_transport.hpp>
+#include <image_transport/publisher.hpp>
+#include <sensor_msgs/msg/compressed_image.hpp>
+#include <rclcpp/rclcpp.hpp>
 
-enum InterfaceType {
-    INT_NOT_SUPPORTED=-2,
-    INT_NONE=-1,
-    INT_CAMERA,
-    INT_STEREO,
-    INT_IMU,
-    INT_VIO,
-    INT_PC,
-    INT_6DOF,
-    INT_AI
+#include "voxl_mpa_to_ros2/interfaces/generic_interface.hpp"
+
+class CameraInterface: public GenericInterface
+{
+public:
+    CameraInterface(rclcpp::Node::SharedPtr nh,
+                 const char*     name);
+
+    ~CameraInterface() { };
+
+    int  GetNumClients();
+    void AdvertiseTopics();
+    void StopAdvertising();
+    
+    // Raw image formats (hires_x_color, grey)
+    sensor_msgs::msg::Image& GetImageMsg(){
+        return m_imageMsg;
+    }
+
+    image_transport::Publisher& GetPublisher(){
+        return m_rosImagePublisher;
+    }
+
+    // Compressed image message for encoded image formats (hires_x_encoded)
+    sensor_msgs::msg::CompressedImage& GetCompressedImageMsg(){
+        return m_compressedImageMsg;
+    }
+
+    rclcpp::Publisher<sensor_msgs::msg::CompressedImage>::SharedPtr& GetCompressedPublisher(){
+        return m_rosCompressedPublisher_;
+    }
+
+    const char * ginterface_name;
+    int frame_format;
+
+private:
+
+    sensor_msgs::msg::CompressedImage                     m_compressedImage;   ///< Compressed Image message
+    sensor_msgs::msg::Image                     m_imageMsg;                   ///< Image message
+    sensor_msgs::msg::CompressedImage           m_compressedImageMsg;         ///< Compressed Image message
+    image_transport::Publisher             m_rosImagePublisher;               ///< Image publisher
+    rclcpp::Publisher<sensor_msgs::msg::CompressedImage>::SharedPtr m_rosCompressedPublisher_;       
+
 };
-
 #endif

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright 2023 ModalAI Inc.
+ * Copyright 2020 ModalAI Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -31,56 +31,44 @@
  * POSSIBILITY OF SUCH DAMAGE.
  ******************************************************************************/
 
-#ifndef AI_DETECTION_MPA_INTERFACE
-#define AI_DETECTION_MPA_INTERFACE
-
-#include "voxl_mpa_to_ros2/interfaces/generic_interface.h"
-#include "voxl_msgs/msg/aidetection.hpp"
+#ifndef POSE_VEL_6DOF_MPA_INTERFACE
+#define POSE_VEL_6DOF_MPA_INTERFACE
 
 
-#define BUF_LEN 64
-#define AI_DETECTION_MAGIC_NUMBER (0x564F584C)
+#include <geometry_msgs/msg/pose_stamped.hpp>
+#include <nav_msgs/msg/odometry.hpp>
+#include <tf2/LinearMath/Quaternion.h>
+#include <tf2/LinearMath/Matrix3x3.h>
 
-// struct containing all relevant metadata to a tflite object detection
-typedef struct ai_detection_t {
-	uint32_t magic_number;
-    int64_t timestamp_ns;
-    uint32_t class_id;
-    int32_t  frame_id;
-    char class_name[BUF_LEN];
-    char cam[BUF_LEN];
-    float class_confidence;
-    float detection_confidence;
-    float x_min;
-    float y_min;
-    float x_max;
-    float y_max;
-} __attribute__((packed)) ai_detection_t;
+#include "voxl_mpa_to_ros2/interfaces/generic_interface.hpp"
 
 
-class AiDetectionInterface: public GenericInterface
+class PoseVel6DOFInterface: public GenericInterface
 {
 public:
-    AiDetectionInterface(rclcpp::Node::SharedPtr nh,
+    PoseVel6DOFInterface(rclcpp::Node::SharedPtr nh,
                  const char*     name);
 
-    ~AiDetectionInterface() { };
+    ~PoseVel6DOFInterface() { };
 
     int  GetNumClients();
     void AdvertiseTopics();
     void StopAdvertising();
 
-    voxl_msgs::msg::Aidetection& GetObjMsg(){
-        return m_objMsg;
+    geometry_msgs::msg::PoseStamped& GetPoseMsg(){
+        return m_poseMsg;
+    }
+    nav_msgs::msg::Odometry& GetOdomMsg(){
+        return m_odomMsg;
     }
 
-    rclcpp::Publisher<voxl_msgs::msg::Aidetection>::SharedPtr ai_detection_pub_;
+    rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pose_pub_;
+    rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub_;
 
 private:
 
-    voxl_msgs::msg::Aidetection m_objMsg;
+    geometry_msgs::msg::PoseStamped           m_poseMsg;                    ///< Image message
+    nav_msgs::msg::Odometry                   m_odomMsg;                    ///< Image message
 
 };
-
-#endif //AI_DETECTION_MPA_INTERFACE
-
+#endif
