@@ -3,10 +3,8 @@ import math
 import time
 from rclpy.node import Node
 from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy, DurabilityPolicy
-from rclpy.qos import qos_profile_sensor_data
 from px4_msgs.msg import OffboardControlMode, TrajectorySetpoint, VehicleCommand, VehicleLocalPosition, VehicleStatus
-import os, pty, select, re, sys
-from geometry_msgs.msg import PoseStamped
+
 
 class OffboardShipLandNode(Node):
     """Node for controlling a vehicle in offboard mode."""
@@ -33,39 +31,45 @@ class OffboardShipLandNode(Node):
             VehicleCommand, '/fmu/in/vehicle_command', qos_profile)
         self.vehicle_status_subscriber = self.create_subscription(
             VehicleStatus, '/fmu/out/vehicle_status', self.vehicle_status_callback, qos_profile)
-        
-        self.tag_subscriber = self.create_subscription(
-            PoseStamped,
-            '/tag_detections',        
-            self.tag_pose_callback,
-            qos_profile_sensor_data
-        )
-
-        self.vehicle_local_position_subscriber = self.create_subscription(
-            PoseStamped, '/qvio', self.vehicle_local_position_callback, qos_profile_sensor_data)
 
 
         self.rate = 20
         self.duration = 5
-        self.altitude = -0.6
+        self.altitude = -1.0
         self.steps = self.duration * self.rate
         self.path = []
-        self.vehicle_local_position = None
+        self.vehicle_local_position = VehicleLocalPosition()
         self.vehicle_status = VehicleStatus()
         self.taken_off = False
-        self.hit_path = False
+        self.start_lineup = False
+        self.ready_to_land = False
         self.armed = False
         self.offboard_setpoint_counter = 0
         self.start_time = time.time()
         self.offboard_arr_counter = 0
-        self.tag_pose = None
-
+        self.init_path()
 
         self.timer = self.create_timer(0.1, self.timer_callback)
 
+    def init_path(self):
+
+        dt = 1.0 / self.rate
+
+        for i in range(self.steps):
+            msg = TrajectorySetpoint()
+
+
+            msg.position = [0.0, 0.0, self.altitude]
+            msg.velocity = [0.0, 0.0, 0.0]
+            msg.acceleration = [0.0, 0.0, 0.0]
+            msg.yaw = 0.0
+
+            self.path.append(msg)
+
+
     def timer_callback(self) -> None:
         """Callback function for the timer."""
-        self.publish_offboard_control_heartbeat_signal_position()
+        self.publish_offboard_control_heartbeat_signal()
 
         if self.offboard_setpoint_counter == 10:
            self.engage_offboard_mode()
@@ -75,27 +79,18 @@ class OffboardShipLandNode(Node):
         if self.offboard_setpoint_counter < 11:
             self.offboard_setpoint_counter += 1
 
-        if (self.start_time + 15 > time.time() and self.start_time + 10 < time.time()):
+        if(self.start_time + 10 > time.time()):
             self.publish_takeoff_setpoint(0.0, 0.0, self.altitude)
-        elif self.start_time + 15 < time.time():
-            if(not self.hit_path):
-                print("Doing tag alignment now")             
-                self.tag_align_timer = self.create_timer(1 / self.rate, self.offboard_move_callback)
-                self.hit_path = True
+        # else:
+        #     if(not self.hit_figure_8):
+        #         self.get_logger().info("Doing figure 8 now")                
+        #         self.figure8_timer = self.create_timer(1 / self.rate, self.offboard_move_callback)
+        #         self.hit_figure_8 = True
 
-    def tag_pose_callback(self, msg):
-        # Extract position and orientation
-        x = msg.pose.position.x
-        y = msg.pose.position.y
-        z = msg.pose.position.z
-        self.tag_pose = (x, y, z)
-
-    def vehicle_local_position_callback(self, msg):
+    def vehicle_local_position_callback(self, vehicle_local_position):
+        print(vehicle_local_position)
         """Callback function for vehicle_local_position topic subscriber."""
-        x = msg.pose.position.x
-        y = msg.pose.position.y
-        z = msg.pose.position.z
-        self.vehicle_local_position = (x, y, z)
+        self.vehicle_local_position = vehicle_local_position
     
     def vehicle_status_callback(self, vehicle_status):
         """Callback function for vehicle_status topic subscriber."""
@@ -127,26 +122,17 @@ class OffboardShipLandNode(Node):
         #self.hit_figure_8 = False
 
     def offboard_move_callback(self):
-        """Callback function for offboard movement along the path."""
-        print(f"Vechile Local Position: {self.vehicle_local_position}")
-        if self.tag_pose is not None:
-            x, y, z = self.tag_pose
-            horizontal_align = x < 0.3 and x > -0.3
-            ready_to_land = horizontal_align and z < 2.5
-
-            if ready_to_land:
-                print("Ready to land!")
-                self.land()
-                self.tag_align_timer.cancel()
-            elif horizontal_align:
-                print(f"Horizontally Aligned, move forward")
-                self.publish_move_forward_setpoint()
-            elif not horizontal_align and  x>=0.2: 
-                print(f"Not yet horizontall aligned, move right")
-                self.publish_move_right_setpoint()
-            elif not horizontal_align and  x<=-0.2:
-                print(f"Not yet horizontall aligned, move left")
-                self.publish_move_left_setpoint()
+        if(self.offboard_arr_counter < len(self.path)):
+            self.trajectory_setpoint_publisher.publish(self.path[self.offboard_arr_counter])
+        
+        if(self.offboard_arr_counter >= len(self.path)):
+            self.publish_takeoff_setpoint(0.0, 0.0, self.altitude)
+        
+        if(self.offboard_arr_counter == len(self.path) + 100):
+            self.figure8_timer.cancel()
+            self.land()
+        
+        self.offboard_arr_counter += 1
 
     def publish_takeoff_setpoint(self, x: float, y: float, z: float):
         """Publish the trajectory setpoint."""
@@ -158,33 +144,27 @@ class OffboardShipLandNode(Node):
         self.trajectory_setpoint_publisher.publish(msg)
 
     def publish_move_left_setpoint(self): 
-        curr_x, curr_y, curr_z = self.vehicle_local_position
         msg = TrajectorySetpoint()
-        msg.position = [curr_x -0.3 / self.rate, curr_y, self.altitude]
-        # print(msg.position)
+        msg.velocity = [-0.2, 0.0, 0.0]
         msg.yaw = 0.0
         msg.timestamp = int(self.get_clock().now().nanoseconds / 1000)
         self.trajectory_setpoint_publisher.publish(msg)
 
     def publish_move_right_setpoint(self): 
-        curr_x, curr_y, curr_z = self.vehicle_local_position
         msg = TrajectorySetpoint()
-        msg.position = [curr_x + 0.3 / self.rate, curr_y, self.altitude]
-        # print(msg.position)
+        msg.velocity = [0.2, 0.0, 0.0]
         msg.yaw = 0.0
         msg.timestamp = int(self.get_clock().now().nanoseconds / 1000)
         self.trajectory_setpoint_publisher.publish(msg)
 
     def publish_move_forward_setpoint(self):
-        curr_x, curr_y, curr_z = self.vehicle_local_position
         msg = TrajectorySetpoint()
-        msg.position = [curr_x, curr_y + 0.3 / self.rate, self.altitude]
-        print(msg.position)
+        msg.velocity = [0.0, 0.2, 0.0]
         msg.yaw = 0.0
         msg.timestamp = int(self.get_clock().now().nanoseconds / 1000)
         self.trajectory_setpoint_publisher.publish(msg)
 
-    def publish_offboard_control_heartbeat_signal_position(self):
+    def publish_offboard_control_heartbeat_signal(self):
         """Publish the offboard control mode."""
         msg = OffboardControlMode()
         msg.position = True
