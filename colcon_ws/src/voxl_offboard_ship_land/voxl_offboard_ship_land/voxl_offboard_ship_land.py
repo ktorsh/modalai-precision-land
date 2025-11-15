@@ -41,13 +41,18 @@ class OffboardShipLandNode(Node):
             qos_profile_sensor_data
         )
 
+        # self.vehicle_local_position_subscriber = self.create_subscription(
+            # PoseStamped, '/qvio', self.vehicle_local_position_callback, qos_profile_sensor_data)
+        
+
         self.vehicle_local_position_subscriber = self.create_subscription(
-            PoseStamped, '/qvio', self.vehicle_local_position_callback, qos_profile_sensor_data)
+            VehicleLocalPosition, '/fmu/out/vehicle_local_position',
+            self.vehicle_local_position_callback, qos_profile_sensor_data)
 
 
         self.rate = 20
         self.duration = 5
-        self.altitude = -0.6
+        self.altitude = -0.55
         self.steps = self.duration * self.rate
         self.path = []
         self.vehicle_local_position = None
@@ -55,6 +60,10 @@ class OffboardShipLandNode(Node):
         self.taken_off = False
         self.hit_path = False
         self.armed = False
+
+        self.land_start_time = None
+        self.hover_cords = None
+
         self.offboard_setpoint_counter = 0
         self.start_time = time.time()
         self.offboard_arr_counter = 0
@@ -90,12 +99,17 @@ class OffboardShipLandNode(Node):
         z = msg.pose.position.z
         self.tag_pose = (x, y, z)
 
-    def vehicle_local_position_callback(self, msg):
-        """Callback function for vehicle_local_position topic subscriber."""
-        x = msg.pose.position.x
-        y = msg.pose.position.y
-        z = msg.pose.position.z
-        self.vehicle_local_position = (x, y, z)
+    # def vehicle_local_position_callback(self, msg):
+    #     """Callback function for vehicle_local_position topic subscriber."""
+    #     x = msg.pose.position.x
+    #     y = msg.pose.position.y
+    #     z = msg.pose.position.z
+    #     self.vehicle_local_position = (x, y, z)
+
+    def vehicle_local_position_callback(self, msg: VehicleLocalPosition):
+        # PX4 NED: x=North, y=East, z=Down
+        self.vehicle_local_position = (msg.x, msg.y, msg.z)
+        # print(f"Vehicle Local Position: x={msg.x:.2f} m, y={msg.y:.2f} m, z={msg.z:.2f} m")
     
     def vehicle_status_callback(self, vehicle_status):
         """Callback function for vehicle_status topic subscriber."""
@@ -128,25 +142,34 @@ class OffboardShipLandNode(Node):
 
     def offboard_move_callback(self):
         """Callback function for offboard movement along the path."""
-        print(f"Vechile Local Position: {self.vehicle_local_position}")
         if self.tag_pose is not None:
             x, y, z = self.tag_pose
             horizontal_align = x < 0.3 and x > -0.3
-            ready_to_land = horizontal_align and z < 2.5
+            ready_to_land = horizontal_align and z < 2.0
 
-            if ready_to_land:
-                print("Ready to land!")
-                self.land()
-                self.tag_align_timer.cancel()
-            elif horizontal_align:
-                print(f"Horizontally Aligned, move forward")
-                self.publish_move_forward_setpoint()
-            elif not horizontal_align and  x>=0.2: 
-                print(f"Not yet horizontall aligned, move right")
-                self.publish_move_right_setpoint()
-            elif not horizontal_align and  x<=-0.2:
-                print(f"Not yet horizontall aligned, move left")
-                self.publish_move_left_setpoint()
+            if not self.land_start_time:
+
+                if ready_to_land:
+                    print("Ready to land, Hovering in Place!")
+                    self.hover_cords = self.vehicle_local_position
+                    self.land_start_time = time.time()
+                elif horizontal_align:
+                    print(f"Horizontally Aligned, move forward")
+                    self.publish_move_forward_setpoint(x)
+                elif not horizontal_align and  x>=0.2: 
+                    print(f"Not yet horizontall aligned, move right")
+                    self.publish_move_right_setpoint()
+                elif not horizontal_align and  x<=-0.2:
+                    print(f"Not yet horizontall aligned, move left")
+                    self.publish_move_left_setpoint()
+            else: 
+                if self.land_start_time + 3 < time.time():
+                    print("Actually landing now")
+                    self.land()
+                    self.tag_align_timer.cancel()
+                else: 
+                    print(f"Hover cords: {self.hover_cords}")
+                    self.publish_current_hover_setpoint(self.hover_cords[0], self.hover_cords[1])
 
     def publish_takeoff_setpoint(self, x: float, y: float, z: float):
         """Publish the trajectory setpoint."""
@@ -160,7 +183,7 @@ class OffboardShipLandNode(Node):
     def publish_move_left_setpoint(self): 
         curr_x, curr_y, curr_z = self.vehicle_local_position
         msg = TrajectorySetpoint()
-        msg.position = [curr_x -0.3 / self.rate, curr_y, self.altitude]
+        msg.position = [curr_x, curr_y - 4.0 / self.rate, self.altitude]
         # print(msg.position)
         msg.yaw = 0.0
         msg.timestamp = int(self.get_clock().now().nanoseconds / 1000)
@@ -169,16 +192,28 @@ class OffboardShipLandNode(Node):
     def publish_move_right_setpoint(self): 
         curr_x, curr_y, curr_z = self.vehicle_local_position
         msg = TrajectorySetpoint()
-        msg.position = [curr_x + 0.3 / self.rate, curr_y, self.altitude]
+        msg.position = [curr_x, curr_y + 4.0 / self.rate, self.altitude]
         # print(msg.position)
         msg.yaw = 0.0
         msg.timestamp = int(self.get_clock().now().nanoseconds / 1000)
         self.trajectory_setpoint_publisher.publish(msg)
 
-    def publish_move_forward_setpoint(self):
+    def publish_move_forward_setpoint(self, tag_displacement):
+        if tag_displacement > 0: 
+            adjustment = min(5.0 * tag_displacement, 2.0)
+        else: 
+            adjustment = max(5.0 * tag_displacement, -2.0)
         curr_x, curr_y, curr_z = self.vehicle_local_position
         msg = TrajectorySetpoint()
-        msg.position = [curr_x, curr_y + 0.3 / self.rate, self.altitude]
+        msg.position = [curr_x + 6.0 / self.rate, curr_y + adjustment / self.rate, self.altitude]
+        print(msg.position)
+        msg.yaw = 0.0
+        msg.timestamp = int(self.get_clock().now().nanoseconds / 1000)
+        self.trajectory_setpoint_publisher.publish(msg)
+    
+    def publish_current_hover_setpoint(self, x, y): 
+        msg = TrajectorySetpoint()
+        msg.position = [x, y, self.altitude]
         print(msg.position)
         msg.yaw = 0.0
         msg.timestamp = int(self.get_clock().now().nanoseconds / 1000)
