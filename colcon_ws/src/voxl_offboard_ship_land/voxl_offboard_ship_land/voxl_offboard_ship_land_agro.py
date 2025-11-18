@@ -154,7 +154,7 @@ class OffboardShipLandNode(Node):
         """Callback function for offboard movement along the path."""
         if self.tag_pose is not None:
             x, y, z = self.tag_pose
-            horizontal_align = x < 0.3 and x > -0.3
+            horizontal_align = x < 0.15 and x > -0.15
             ready_to_land = horizontal_align and z < 2.0
 
             if not self.land_start_time:
@@ -166,13 +166,13 @@ class OffboardShipLandNode(Node):
                     self.altitude = -0.04
                 elif horizontal_align:
                     print(f"Horizontally Aligned, move forward")
-                    self.publish_move_forward_setpoint(x)
-                elif not horizontal_align and  x>=0.2: 
+                    self.publish_move_forward_setpoint(x, z, desired_range=1.8)
+                elif not horizontal_align and  x>=0.1: 
                     print(f"Not yet horizontall aligned, move right")
-                    self.publish_move_right_setpoint()
-                elif not horizontal_align and  x<=-0.2:
+                    self.publish_move_horizontal_setpoint(x)
+                elif not horizontal_align and  x<=-0.1:
                     print(f"Not yet horizontall aligned, move left")
-                    self.publish_move_left_setpoint()
+                    self.publish_move_horizontal_setpoint(x)
             else: 
                 if self.land_start_time + 1.5 < time.time():
                     print("Actually landing now")
@@ -190,32 +190,35 @@ class OffboardShipLandNode(Node):
         msg.timestamp = int(self.get_clock().now().nanoseconds / 1000)
         self.trajectory_setpoint_publisher.publish(msg)
 
-    def publish_move_left_setpoint(self): 
+    def publish_move_horizontal_setpoint(self, tag_displacement_horizontal): 
         curr_x, curr_y, curr_z = self.vehicle_local_position
+        step = tag_displacement_horizontal / 1.5 
+        if abs(step) > 2.0: 
+            step = 2.0 if step > 0 else -2.0
+        
+
         msg = TrajectorySetpoint()
-        msg.position = [curr_x, curr_y - 4.0 / self.rate, self.altitude]
-        # print(msg.position)
+        msg.position = [curr_x, curr_y + step, self.altitude]
         msg.yaw = 0.0
         msg.timestamp = int(self.get_clock().now().nanoseconds / 1000)
+        print(msg.position)
         self.trajectory_setpoint_publisher.publish(msg)
 
-    def publish_move_right_setpoint(self): 
-        curr_x, curr_y, curr_z = self.vehicle_local_position
-        msg = TrajectorySetpoint()
-        msg.position = [curr_x, curr_y + 4.0 / self.rate, self.altitude]
-        # print(msg.position)
-        msg.yaw = 0.0
-        msg.timestamp = int(self.get_clock().now().nanoseconds / 1000)
-        self.trajectory_setpoint_publisher.publish(msg)
 
-    def publish_move_forward_setpoint(self, tag_displacement):
-        if tag_displacement > 0: 
-            adjustment = min(5.0 * tag_displacement, 2.0)
+    def publish_move_forward_setpoint(self, tag_displacement_horizontal, tag_displacement_forward, desired_range = 3.0):
+        if tag_displacement_horizontal > 0: 
+            adjustment_horizontal = min(5.0 * tag_displacement_horizontal, 6.0)
         else: 
-            adjustment = max(5.0 * tag_displacement, -2.0)
+            adjustment_horizontal = max(5.0 * tag_displacement_horizontal, -6.0)
+        
+        adjustment_forward = (tag_displacement_forward - desired_range) / 1.5 
+        if abs(adjustment_forward) > 2.0:
+            adjustment_forward = 2.0 if adjustment_forward > 0 else -2.0
+        
+
         curr_x, curr_y, curr_z = self.vehicle_local_position
         msg = TrajectorySetpoint()
-        msg.position = [curr_x + 6.0 / self.rate, curr_y + adjustment / self.rate, self.altitude]
+        msg.position = [curr_x + adjustment_forward, curr_y + adjustment_horizontal / self.rate, self.altitude]
         print(msg.position)
         msg.yaw = 0.0
         msg.timestamp = int(self.get_clock().now().nanoseconds / 1000)
