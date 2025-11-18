@@ -83,8 +83,8 @@ class OffboardShipLandNode(Node):
 
         if self.land_start_time and self.land_start_time + 5.0 < time.time():
             print("Quitting program")
-            self.timer.cancel()
             self.get_clock().call_later(0.1, self._shutdown)
+
 
         if self.offboard_setpoint_counter == 10:
            self.engage_offboard_mode()
