@@ -52,7 +52,7 @@ class OffboardShipLandNode(Node):
 
         self.rate = 20
         self.duration = 5
-        self.altitude = -0.55
+        self.altitude = -1.0
         self.steps = self.duration * self.rate
         self.path = []
         self.vehicle_local_position = None
@@ -75,6 +75,10 @@ class OffboardShipLandNode(Node):
     def timer_callback(self) -> None:
         """Callback function for the timer."""
         self.publish_offboard_control_heartbeat_signal_position()
+
+        if self.land_start_time and self.land_start_time + 5.0 < time.time():
+            print("Quitting program")
+            self.timer.cancel()
 
         if self.offboard_setpoint_counter == 10:
            self.engage_offboard_mode()
@@ -153,6 +157,7 @@ class OffboardShipLandNode(Node):
                     print("Ready to land, Hovering in Place!")
                     self.hover_cords = self.vehicle_local_position
                     self.land_start_time = time.time()
+                    self.altitude = -0.04
                 elif horizontal_align:
                     print(f"Horizontally Aligned, move forward")
                     self.publish_move_forward_setpoint(x)
@@ -163,9 +168,8 @@ class OffboardShipLandNode(Node):
                     print(f"Not yet horizontall aligned, move left")
                     self.publish_move_left_setpoint()
             else: 
-                if self.land_start_time + 3 < time.time():
+                if self.land_start_time + 1.5 < time.time():
                     print("Actually landing now")
-                    self.land()
                     self.tag_align_timer.cancel()
                 else: 
                     print(f"Hover cords: {self.hover_cords}")
