@@ -206,10 +206,9 @@ class OffboardShipLandNode(Node):
 
 
     def publish_move_forward_setpoint(self, tag_displacement_horizontal, tag_displacement_forward, desired_range = 3.0):
-        if tag_displacement_horizontal > 0: 
-            adjustment_horizontal = min(5.0 * tag_displacement_horizontal, 6.0)
-        else: 
-            adjustment_horizontal = max(5.0 * tag_displacement_horizontal, -6.0)
+        adjustment_horizontal = tag_displacement_horizontal / 1.5
+        if abs(adjustment_horizontal) > 2.0:
+            adjustment_horizontal = 2.0 if adjustment_horizontal > 0 else -2.0
         
         adjustment_forward = (tag_displacement_forward - desired_range) / 1.5 
         if abs(adjustment_forward) > 2.0:
@@ -218,7 +217,7 @@ class OffboardShipLandNode(Node):
 
         curr_x, curr_y, curr_z = self.vehicle_local_position
         msg = TrajectorySetpoint()
-        msg.position = [curr_x + adjustment_forward, curr_y + adjustment_horizontal / self.rate, self.altitude]
+        msg.position = [curr_x + adjustment_forward, curr_y + adjustment_horizontal, self.altitude]
         print(msg.position)
         msg.yaw = 0.0
         msg.timestamp = int(self.get_clock().now().nanoseconds / 1000)
