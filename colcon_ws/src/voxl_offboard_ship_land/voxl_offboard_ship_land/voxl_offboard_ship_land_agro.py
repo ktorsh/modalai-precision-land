@@ -179,10 +179,10 @@ class OffboardShipLandNode(Node):
                 # Altitude (vertical) Alignment
                 elif not vertical_align and y >= 0.1:
                     print(f"Not yet vertically aligned, move down: {y} meters")
-                    self.publish_move_vertical_setpoint(x)
+                    self.publish_move_vertical_setpoint(y)
                 elif not vertical_align and y <= -0.1:
                     print(f"Not yet vertically aligned, move up: {abs(y)} meters")
-                    self.publish_move_vertical_setpoint(x)
+                    self.publish_move_vertical_setpoint(y)
                 # Default Behvaior
                 else:
                     print("Move Callback Default Behavior")
