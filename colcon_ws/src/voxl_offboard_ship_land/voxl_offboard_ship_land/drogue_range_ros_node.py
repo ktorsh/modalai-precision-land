@@ -4,6 +4,7 @@ import rclpy
 from rclpy.node import Node
 from std_msgs.msg import Float32MultiArray
 
+
 class UdpCouplerPub(Node):
     def __init__(self):
         super().__init__("udp_coupler_pub")
