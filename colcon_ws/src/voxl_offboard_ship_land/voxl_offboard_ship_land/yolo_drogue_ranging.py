@@ -20,7 +20,7 @@ import json
 # RTSP + MODEL SETTINGS
 # =========================
 RTSP_URL = "rtsp://127.0.0.1:8900/live"
-MODEL_PATH = "best.pt"
+MODEL_PATH = "../models/best.pt"
 
 IMGSZ = 416
 CONF = 0.25
